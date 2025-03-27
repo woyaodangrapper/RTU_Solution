@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-	<Import Project="..\..\..\..\..\build\common.props" />
-	<PropertyGroup>
-		<Description>工业设备通讯协议-Modbus协议</Description>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<DocumentationFile></DocumentationFile>
-	</PropertyGroup>
-</Project>
