@@ -20,6 +20,6 @@
 		<PackageReference Include="System.IO.Ports" Version="9.0.3" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\RTU.BACNET\BACnet.csproj" />
+	  <ProjectReference Include="..\RTU.BACNET\RTU.BACnet.csproj" />
 	</ItemGroup>
 </Project>
