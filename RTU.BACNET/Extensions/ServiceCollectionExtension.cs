@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using System;
 using System.Net.BACnet;
@@ -7,18 +7,18 @@ namespace Microsoft.Extensions.DependencyInjection;
 
 public static class ServiceCollectionExtension
 {
-    public static IServiceCollection AddBACnetClient(this IServiceCollection services, Action<BACnetClientOptions> configureOptions)
+    public static IServiceCollection AddBACnetClient(
+       this IServiceCollection services,
+       Action<BACnetClientOptions>? configureOptions)
     {
-        // 配置 BACnetClientOptions
-        services.Configure(configureOptions);
 
-        // 注册 BACnetClient，并将其依赖项注入
-        services.AddSingleton(provider =>
+        services.Configure(configureOptions ?? (_ => { }));
+
+        // 注册 BACnetClient，并注入 BACnetClientOptions
+        services.TryAddSingleton(provider =>
         {
             var options = provider.GetRequiredService<IOptions<BACnetClientOptions>>().Value;
-            var logger = provider.GetRequiredService<ILogger<BACnetClient>>();
-            var transport = new BACnetIpUdpProtocolTransport(options.Port);
-            return new BACnetClient(transport, options.Timeout, options.Retries, logger);
+            return new BACnetClient(new BACnetIpUdpProtocolTransport(options.Port));
         });
 
         return services;
