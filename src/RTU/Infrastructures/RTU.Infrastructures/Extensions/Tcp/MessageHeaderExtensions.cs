@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using RTU.Infrastructures.Contracts.Tcp;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
 namespace RTU.Infrastructures.Extensions.Tcp;

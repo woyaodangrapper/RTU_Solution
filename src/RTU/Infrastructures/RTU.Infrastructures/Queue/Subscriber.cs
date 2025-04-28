@@ -1,29 +1,64 @@
-﻿namespace RTU.Infrastructures.Queue;
+﻿using Microsoft.Extensions.Logging;
+using RTU.Infrastructures.Contracts.Tcp;
+
+namespace RTU.Infrastructures.Queue;
 
 
-public class Subscriber
+public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 {
+    private readonly SemaphoreSlim _signal;
 
-
-    // 消费消息的方法
-    public void StartConsuming(CancellationToken cancellationToken)
+    public Subscriber(QueueOptions options, ILoggerFactory _loggerFactory)
+      : base(options)
     {
-        Task.Run(() => ConsumeMessages(cancellationToken));
+        _signal = options.Signal;
+    }
+    public Task<T[]> DequeueBatchAsync(CancellationToken cancellation)
+    {
+        throw new NotImplementedException();
     }
 
-    private void ConsumeMessages(CancellationToken cancellationToken)
+    public bool TryDequeue(out T? message, CancellationToken cancellation)
     {
-        while (!cancellationToken.IsCancellationRequested)
+        message = default;
+        try
         {
-            var message = _queue.Dequeue();
-            ProcessMessage(message);
+            message = DequeueCore(cancellation);
+            return true;
+        }
+        catch (OperationCanceledException) // Catch specific exception
+        {
+            return false;
+        }
+        finally
+        {
+            _signal.Release();
         }
     }
 
-    // 处理从队列中取出的消息
-    private void ProcessMessage(byte[] message)
+    private T DequeueCore(CancellationToken cancellation)
     {
-        Console.WriteLine($"Processing message: {BitConverter.ToString(message)}");
-        // 在此添加消息处理逻辑
+
+        try
+        {
+            int i = -5;
+            while (true)
+            {
+                if (Dequeue(out var message, cancellation))
+                    return message;
+
+                if (i > 10)
+                    _signal.Wait(millisecondsTimeout: 10, cancellation);
+                else if (i++ > 0)
+                    _signal.Wait(millisecondsTimeout: i, cancellation);
+                else
+                    Thread.Yield();
+            }
+        }
+        finally
+        {
+            _signal.Release();
+        }
     }
+
 }

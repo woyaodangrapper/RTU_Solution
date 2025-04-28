@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\RTU\Infrastructures\RTU.Infrastructures\RTU.Infrastructures.csproj" />
     <ProjectReference Include="..\..\RTU\RTU.TcpClient\RTU.TcpClient.csproj" />
     <ProjectReference Include="..\..\RTU\RTU.TcpServer\RTU.TcpServer.csproj" />
   </ItemGroup>

@@ -3,6 +3,7 @@
 // 这里我们明确指定结构体的大小为 12 字节，并保证字段的通信布局。
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+namespace RTU.Infrastructures.Contracts.Tcp;
 
 [StructLayout(LayoutKind.Explicit, Size = 12)] // 结构体总大小为 12 字节，确保与二进制协议或硬件接口兼容
 public struct MessageHeader
