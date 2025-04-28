@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using RTU.Infrastructures.Contracts.Tcp;
+using RTU.Infrastructures.Contracts.Queue;
 
 namespace RTU.Infrastructures.Queue;
 

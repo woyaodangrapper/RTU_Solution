@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using RTU.Infrastructures.Contracts.Tcp;
+using RTU.Infrastructures.Contracts.Queue;
 
 namespace RTU.Infrastructures.Queue;
 

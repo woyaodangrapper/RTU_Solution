@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using RTU.Infrastructures.Contracts.Tcp;
+using RTU.Infrastructures.Contracts.Queue;
 using RTU.Infrastructures.Extensions;
 using System.Collections.Concurrent;
 using ZiggyCreatures.Caching.Fusion;

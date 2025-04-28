@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace RTU.Infrastructures.Contracts.Tcp;
+namespace RTU.Infrastructures.Contracts.Queue;
 
 /// <summary> The options to create a queue. </summary>
 /// <summary>
