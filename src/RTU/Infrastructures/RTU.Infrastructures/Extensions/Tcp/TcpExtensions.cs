@@ -30,6 +30,7 @@ public static class IPAddressExtensions
 
         return null; // 如果无法找到可用的 IPv4 地址，则返回 null
     }
+
     public static int GenerateRandomPort()
     {
         const int minPort = 1000;
@@ -43,13 +44,16 @@ public static class IPAddressExtensions
         // 随机生成端口号并检查是否已被占用，最多尝试 maxAttempts 次
         do
         {
+#pragma warning disable CA5394 // Open to the outside world
             port = random.Next(minPort, maxPort + 1);
+#pragma warning restore CA5394 // Open to the outside world
             attempt++;
         } while (!IsPortAvailable(port) && attempt < maxAttempts);
 
         if (attempt >= maxAttempts)
         {
-            throw new Exception("无法生成可用的端口号。");
+            throw new InvalidOperationException($"没有足够的空余端口可以使用，尝试了{maxAttempts}次");
+
             // 或者返回一个特定的值，表示无法生成可用的端口号
             // return -1;
         }

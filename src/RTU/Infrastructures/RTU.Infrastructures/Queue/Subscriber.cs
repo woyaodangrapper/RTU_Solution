@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
-using RTU.Infrastructures.Contracts.Queue;
-using System.Reactive.Subjects;
 
 namespace RTU.Infrastructures.Queue;
-
 
 public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 {
@@ -12,6 +9,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
     public Subscriber(QueueOptions options, ILoggerFactory loggerFactory, Subject<T>? subject = null)
       : base(options, loggerFactory, subject)
     {
+        ArgumentNullException.ThrowIfNull(options);
         _signal = options.Signal;
     }
 
@@ -44,7 +42,6 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
         {
             return false;
         }
-
     }
 
     public async Task<(bool success, T? item)> TryDequeueAsync(CancellationToken cancellationToken)
@@ -62,7 +59,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
         }
     }
 
-    public async Task<List<T>> TryDequeueBatchAsync(int batchSize, CancellationToken cancellationToken)
+    public async Task<IEnumerable<T>> TryDequeueBatchAsync(int batchSize, CancellationToken cancellationToken)
     {
         var list = new List<T>(batchSize);
         for (int i = 0; i < batchSize; i++)
@@ -74,9 +71,10 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
         return list;
     }
 
-    public List<T> TryDequeueBatch(int batchSize, CancellationToken cancellationToken)
+    public bool TryDequeueBatch(out IEnumerable<T> values, int batchSize, CancellationToken cancellationToken)
     {
-        var list = new List<T>(batchSize);
+        var list = new List<T>();
+
         for (int i = 0; i < batchSize; i++)
         {
             if (TryDequeue(out var item, cancellationToken))
@@ -89,7 +87,9 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
                 break;
             }
         }
-        return list;
+
+        values = list;
+        return list.Count > 0;
     }
 
     public IList<T> DequeueAll()
@@ -102,5 +102,4 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
         }
         return list;
     }
-
 }

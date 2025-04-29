@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using RTU.Infrastructures.Contracts.Queue;
 using RTU.Infrastructures.Queue;
 
 namespace RTU.Infrastructures.Extensions.Tcp;
@@ -12,7 +11,7 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Registers what is needed to create and consume shared-memory queues that are
     /// cross-process accessible.
-    /// Use <see cref="IQueueFactory"/> to access the queue.
+    /// Use <see cref="IQueueFactory{T}"/> to access the queue.
     /// </summary>
     public static IServiceCollection AddQueueCache(this IServiceCollection services)
     {

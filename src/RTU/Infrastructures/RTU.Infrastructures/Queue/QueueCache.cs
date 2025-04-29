@@ -17,30 +17,33 @@ public abstract class QueueCache<T> : L1Cache
     private bool _disposed;
     protected ILogger<QueueCache<T>> Logger { get; }
     protected Subject<T>? Subject { get; }
-    protected QueueCache(QueueOptions queueOptions, ILoggerFactory loggerFactory, Subject<T>? subject = null)
-      : base(queueOptions.Name, new FusionCacheOptions
+
+    protected QueueCache(QueueOptions options, ILoggerFactory loggerFactory, Subject<T>? subject = null)
+#pragma warning disable CA1062 // 子类验证过了
+      : base(options.Name, new FusionCacheOptions
+#pragma warning restore CA1062 // 验证公共方法的参数
       {
           DefaultEntryOptions = new FusionCacheEntryOptions
           {
-              Duration = queueOptions.Duration,
-              IsFailSafeEnabled = queueOptions.IsFailSafeEnabled,
-              FailSafeThrottleDuration = queueOptions.FailSafeThrottleDuration,
+              Duration = options.Duration,
+              IsFailSafeEnabled = options.IsFailSafeEnabled,
+              FailSafeThrottleDuration = options.FailSafeThrottleDuration,
           }
       }, new MemoryCacheOptions
       {
-          SizeLimit = queueOptions.SizeLimit,
-          ExpirationScanFrequency = queueOptions.ExpirationScanFrequency,
-          CompactionPercentage = queueOptions.CompactionPercentage,
+          SizeLimit = options.SizeLimit,
+          ExpirationScanFrequency = options.ExpirationScanFrequency,
+          CompactionPercentage = options.CompactionPercentage,
       })
     {
-        _extremeMode = queueOptions.Mode;
-        _queue = queueOptions.Queue;
-        _signal = queueOptions.Signal;
+        ArgumentNullException.ThrowIfNull(options);
+        _extremeMode = options.Mode;
+        _queue = options.Queue;
+        _signal = options.Signal;
 
         Subject = subject;
         Logger = loggerFactory.CreateLogger<QueueCache<T>>();
     }
-
 
     /// <summary>
     /// 入队（非阻塞）
@@ -54,7 +57,6 @@ public abstract class QueueCache<T> : L1Cache
         }
         else
         {
-
             // 常规模式：存缓存，入队 key
             var key = SnowflakeId.NewSnowflakeId(); // 生成唯一 key
             GetOrAdd(key, item, Util.TryOccupy(item), TimeSpan.FromSeconds(30)); // 存入缓存，30秒有效
@@ -103,9 +105,7 @@ public abstract class QueueCache<T> : L1Cache
             // 如果队列为空，返回 false
             return false;
         }
-
     }
-
 
     /// <summary>
     /// 释放资源

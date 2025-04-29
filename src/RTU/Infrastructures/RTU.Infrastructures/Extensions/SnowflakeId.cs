@@ -7,23 +7,31 @@ public class SnowflakeId
 
     // 机器ID占用的位数
     private const int MachineIdBits = 10;
+
     // 序列号占用的位数
     private const int SequenceBits = 12;
+
     // 机器ID最大值 (1023)
     private const long MaxMachineId = -1L ^ (-1L << MachineIdBits);
+
     // 序列号最大值 (4095)
     private const long MaxSequence = -1L ^ (-1L << SequenceBits);
 
     // 机器ID偏移量 (12位序列号 + 41位时间戳)
     private const int MachineIdShift = SequenceBits;
+
     // 时间戳偏移量 (12位序列号 + 10位机器ID)
     private const int TimestampLeftShift = SequenceBits + MachineIdBits;
+
     // 雪花ID的序列号
     private long _sequence;
+
     // 上次生成ID的时间戳
     private long _lastTimestamp = -1L;
+
     // 当前机器ID（基于当前程序集的GUID）
     private long _machineId;
+
     // 锁对象，确保线程安全
     private static readonly object _lock = new();
 
@@ -98,6 +106,7 @@ public class SnowflakeId
         }
         return timestamp;
     }
+
     private static int GetUniqueMachineId()
     {
         return $"{Environment.MachineName}-{Environment.UserDomainName}-{Environment.OSVersion.Version}"

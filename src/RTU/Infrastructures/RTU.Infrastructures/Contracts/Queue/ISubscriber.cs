@@ -2,7 +2,6 @@
 
 public interface ISubscriber<T> : IDisposable
 {
-
     /// <summary>
     /// 尝试从队列中同步阻塞地获取一条消息。
     /// </summary>
@@ -35,10 +34,10 @@ public interface ISubscriber<T> : IDisposable
     /// 用于观察取消请求的 <see cref="CancellationToken"/>，若在等待期间触发，则方法将返回 (<c>false</c>, <c>default</c>)。
     /// </param>
     /// <returns>
-    /// 返回一个元组：  
+    /// 返回一个元组：
     /// <list type="bullet">
-    ///   <item><c>success</c>：若成功取出消息则为 <see langword="true"/>；否则为 <see langword="false"/>。</item>  
-    ///   <item><c>item</c>：取出的消息（若 <c>success</c> 为 <see langword="false"/> 则为默认值）。</item>  
+    ///   <item><c>success</c>：若成功取出消息则为 <see langword="true"/>；否则为 <see langword="false"/>。</item>
+    ///   <item><c>item</c>：取出的消息（若 <c>success</c> 为 <see langword="false"/> 则为默认值）。</item>
     /// </list>
     /// </returns>
     Task<(bool success, T? item)> TryDequeueAsync(CancellationToken cancellationToken);
@@ -55,21 +54,25 @@ public interface ISubscriber<T> : IDisposable
     /// <returns>
     /// 返回一个 <see cref="List{T}"/>，包含实际取出的消息，数量最多为 <paramref name="batchSize"/>。
     /// </returns>
-    Task<List<T>> TryDequeueBatchAsync(int batchSize, CancellationToken cancellationToken);
+    Task<IEnumerable<T>> TryDequeueBatchAsync(int batchSize, CancellationToken cancellationToken);
 
     /// <summary>
-    /// 同步批量获取最多 <paramref name="batchSize"/> 条消息，针对每条消息均阻塞等待可用或取消。
+    /// 同步批量获取最多 <paramref name="batchSize"/> 条消息。对于每条消息，操作将阻塞直到可用或取消。
     /// </summary>
     /// <param name="batchSize">
-    /// 指定本次调用最多要获取的消息数量。
+    /// 本次调用尝试获取的最大消息数量。
     /// </param>
     /// <param name="cancellationToken">
-    /// 用于观察取消请求的 <see cref="CancellationToken"/>，若在等待期间触发，则停止后续等待并返回已获取的消息列表。
+    /// 用于监视取消请求的 <see cref="CancellationToken"/>。如果在等待期间被触发，将停止进一步等待，并返回当前已获取的消息。
+    /// </param>
+    /// <param name="values">
+    /// 输出的消息集合。
     /// </param>
     /// <returns>
-    /// 返回一个 <see cref="List{T}"/>，包含实际取出的消息，数量最多为 <paramref name="batchSize"/>。
+    /// 如果成功获取到至少一条消息，返回 <c>true</c>，并通过 <paramref name="values"/> 输出已获取的消息集合（最多 <paramref name="batchSize"/> 条）；
+    /// 否则返回 <c>false</c>。
     /// </returns>
-    List<T> TryDequeueBatch(int batchSize, CancellationToken cancellationToken);
+    bool TryDequeueBatch(out IEnumerable<T> values, int batchSize, CancellationToken cancellationToken);
 
     /// <summary>
     /// 从队列中获取当前所有可用的消息，不等待新入队的项。
@@ -79,5 +82,8 @@ public interface ISubscriber<T> : IDisposable
     /// </returns>
     IList<T> DequeueAll();
 
+    /// <returns>
+    /// 用于观察消息的 <see cref="IObservable{T}"/> 实例。
+    /// </returns>
     IObservable<T>? Observable { get; }
 }

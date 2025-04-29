@@ -48,7 +48,6 @@ public sealed class QueueOptions
     /// </summary>
     public TimeSpan FailSafeThrottleDuration { get; set; } = TimeSpan.FromSeconds(5);
 
-
     public ConcurrentQueue<object> Queue { get; } = new();
 
     public SemaphoreSlim Signal { get; } = new(0);
@@ -56,5 +55,4 @@ public sealed class QueueOptions
     private static QueueOptions? _instance;
 
     public static QueueOptions Instance => _instance ??= new QueueOptions();
-
 }

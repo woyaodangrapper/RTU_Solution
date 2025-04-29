@@ -21,6 +21,7 @@ internal class QueueFactory<T> : IQueueFactory<T>
         _queueOptions = queueOptions;
         _subject = subject;
     }
+
     /// <inheritdoc/>
     public IPublisher<T> CreatePublisher(QueueOptions options) =>
         new Publisher<T>(options, _loggerFactory);

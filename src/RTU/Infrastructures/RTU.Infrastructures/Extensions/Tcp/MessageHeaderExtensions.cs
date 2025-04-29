@@ -14,6 +14,8 @@ public static class MessageHeaderExtensions
 
     public static MessageHeader? TryReadHeader(this NetworkStream stream)
     {
+        ArgumentNullException.ThrowIfNull(stream);
+
         try
         {
             byte[] header = new byte[Marshal.SizeOf<MessageHeader>()];
@@ -34,6 +36,8 @@ public static class MessageHeaderExtensions
 
     public static MessageHeader? TryReadHeader(this byte[] bytes)
     {
+        ArgumentNullException.ThrowIfNull(bytes);
+
         try
         {
             byte[] header = bytes[0..Marshal.SizeOf<MessageHeader>()];
@@ -60,6 +64,8 @@ public static class MessageHeaderExtensions
 
     public static MessageHeader? TryReadHeader(this List<byte> bytes)
     {
+        ArgumentNullException.ThrowIfNull(bytes);
+
         var HeaderSize = Marshal.SizeOf<MessageHeader>();
         if (bytes.Count < HeaderSize)
         {

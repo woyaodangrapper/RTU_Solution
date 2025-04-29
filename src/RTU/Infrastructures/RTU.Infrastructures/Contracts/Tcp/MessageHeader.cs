@@ -3,10 +3,11 @@
 // 这里我们明确指定结构体的大小为 12 字节，并保证字段的通信布局。
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+
 namespace RTU.Infrastructures.Contracts.Tcp;
 
 [StructLayout(LayoutKind.Explicit, Size = 12)] // 结构体总大小为 12 字节，确保与二进制协议或硬件接口兼容
-public struct MessageHeader
+public struct MessageHeader : IEquatable<MessageHeader>
 {
     [FieldOffset(0)]
     public ushort Version; // 协议版本，2字节
@@ -23,7 +24,6 @@ public struct MessageHeader
     [FieldOffset(10)]
     public ushort SequenceId; // 序列号（2字节）
 
-
     // 构造函数，用于初始化消息头的各个字段。
     // 在创建 MessageHeader 实例时，必须传入总长度、命令 ID 和序列号。
     public MessageHeader(byte[] bytes)
@@ -35,6 +35,7 @@ public struct MessageHeader
         CommandId = BitConverter.ToUInt16(bytes, 8);
         SequenceId = BitConverter.ToUInt16(bytes, 10);
     }
+
     public MessageHeader(ReadOnlySpan<byte> bytes)
     {
         this = default;
@@ -44,6 +45,7 @@ public struct MessageHeader
         CommandId = BitConverter.ToUInt16(bytes.Slice(8, 2));
         SequenceId = BitConverter.ToUInt16(bytes.Slice(10, 2));
     }
+
     public MessageHeader(int version, int reserved, int totalLength, int commandId, int sequenceId)
     {
         Version = (ushort)version;
@@ -52,10 +54,15 @@ public struct MessageHeader
         CommandId = (ushort)commandId;
         SequenceId = (ushort)sequenceId;
     }
-    // 序列化为字节数组
-    public readonly byte[] ToBytes(bool? isBigEndian = null)
+
+    /// <summary>
+    /// 序列化为字节数组
+    /// </summary>
+    /// <param name="isBig">是大端还是小端不填则默认系统配置</param>
+    /// <returns></returns>
+    public readonly byte[] ToBytes(bool? isBig = null)
     {
-        bool isBigEndianFlag = isBigEndian ?? !BitConverter.IsLittleEndian;
+        bool isBigEndianFlag = isBig ?? !BitConverter.IsLittleEndian;
         byte[] buffer = new byte[12];
         if (isBigEndianFlag)
         {
@@ -76,7 +83,37 @@ public struct MessageHeader
 
         return buffer;
     }
+
+    public override bool Equals(object? obj) // 修改为 object? 以匹配为 Null 性
+    {
+        return obj is MessageHeader other && Equals(other);
+    }
+
+    public bool Equals(MessageHeader other)
+    {
+        return Version == other.Version &&
+               Reserved == other.Reserved &&
+               TotalLength == other.TotalLength &&
+               CommandId == other.CommandId &&
+               SequenceId == other.SequenceId;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Version, Reserved, TotalLength, CommandId, SequenceId);
+    }
+
+    public static bool operator ==(MessageHeader left, MessageHeader right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(MessageHeader left, MessageHeader right)
+    {
+        return !(left == right);
+    }
 }
+
 /*
     Offset |     字段       | 大小 | 用途
     -------| --------------| ------| ------------------------

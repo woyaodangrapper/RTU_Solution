@@ -16,7 +16,6 @@ public abstract class L1Cache : IDisposable
     protected static readonly ConcurrentDictionary<string, (FusionCache, MemoryCache, FusionCacheEntryOptions)>
         CachePool = [];
 
-
     protected L1Cache(string name, FusionCacheOptions fusionOptions, MemoryCacheOptions memoryOptions)
     {
         if (CachePool.TryGetValue(name, out var cache))
@@ -68,7 +67,6 @@ public abstract class L1Cache : IDisposable
         }
         _fusionCache.Set($"RTU:{key}", item, options);
     }
-
 
     public TItem GetOrAdd<TItem>(object key, TItem factory, int? size = null, TimeSpan? duration = null)
     {
