@@ -93,12 +93,17 @@ var factory = new QueueFactory<string>();
 var publisher = factory.CreatePublisher();
 var subscriber = factory.CreateSubscriber();
 
+
+_ = Task.Run(() =>
+{
+    while (true)
+    {
+        subscriber.TryDequeue(out var a, default);
+        Console.WriteLine(a);
+    }
+});
 // 先把数据放入队列
 publisher.TryEnqueue("hello world");
 
-// 然后从队列中读取数据
-subscriber.TryDequeue(out var a, default);
-
-Console.WriteLine(a);  // 应该输出 "hello world"
 
 Console.ReadLine();

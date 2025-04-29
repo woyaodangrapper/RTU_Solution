@@ -8,57 +8,96 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 {
     private readonly SemaphoreSlim _signal;
 
-    public Subscriber(QueueOptions options, ILoggerFactory _loggerFactory)
-      : base(options)
+    public Subscriber(QueueOptions options, ILoggerFactory loggerFactory)
+      : base(options, loggerFactory)
     {
         _signal = options.Signal;
     }
-    public Task<T[]> DequeueBatchAsync(CancellationToken cancellation)
-    {
-        throw new NotImplementedException();
-    }
 
-    public bool TryDequeue(out T? message, CancellationToken cancellation)
+    public bool TryDequeue(out T? message)
     {
         message = default;
+        _signal.Wait(0);
         try
         {
-            message = DequeueCore(cancellation);
-            return true;
+            return Dequeue(out message, default);
         }
         catch (OperationCanceledException) // Catch specific exception
         {
             return false;
         }
-        finally
+    }
+
+    public bool TryDequeue(out T? message, CancellationToken cancellationToken)
+    {
+        message = default;
+
+        _signal.Wait(cancellationToken);
+        try
         {
-            _signal.Release();
+            return Dequeue(out message, cancellationToken);
+        }
+        catch (OperationCanceledException) // Catch specific exception
+        {
+            return false;
+        }
+
+    }
+
+    public async Task<(bool success, T? item)> TryDequeueAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _signal.WaitAsync(cancellationToken).ConfigureAwait(false);
+            if (Dequeue(out var item, cancellationToken))
+                return (true, item);
+            return default;
+        }
+        catch (OperationCanceledException)
+        {
+            return default;
         }
     }
 
-    private T DequeueCore(CancellationToken cancellation)
+    public async Task<List<T>> TryDequeueBatchAsync(int batchSize, CancellationToken cancellationToken)
     {
-
-        try
+        var list = new List<T>(batchSize);
+        for (int i = 0; i < batchSize; i++)
         {
-            int i = -5;
-            while (true)
-            {
-                if (Dequeue(out var message, cancellation))
-                    return message;
+            var (success, item) = await TryDequeueAsync(cancellationToken).ConfigureAwait(false);
+            if (success) list.Add(item);
+            else break;
+        }
+        return list;
+    }
 
-                if (i > 10)
-                    _signal.Wait(millisecondsTimeout: 10, cancellation);
-                else if (i++ > 0)
-                    _signal.Wait(millisecondsTimeout: i, cancellation);
-                else
-                    Thread.Yield();
+    public List<T> TryDequeueBatch(int batchSize, CancellationToken cancellationToken)
+    {
+        var list = new List<T>(batchSize);
+        for (int i = 0; i < batchSize; i++)
+        {
+            if (TryDequeue(out var item, cancellationToken))
+            {
+                list.Add(item);
+            }
+            else
+            {
+                // 极端竞态：信号到达但未取到元素，则跳出
+                break;
             }
         }
-        finally
+        return list;
+    }
+
+    public IList<T> DequeueAll()
+    {
+        var list = new List<T>();
+        while (TryDequeue(out var item))
         {
-            _signal.Release();
+            list.Add(item);
+            _signal.Wait();
         }
+        return list;
     }
 
 }

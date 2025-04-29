@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Contracts.Queue;
 using RTU.Infrastructures.Extensions;
 using System.Collections.Concurrent;
@@ -15,8 +16,9 @@ public abstract class QueueCache<T> : L1Cache
     private readonly SemaphoreSlim _signal;
     private readonly bool _extremeMode;
     private bool _disposed;
+    protected ILogger<QueueCache<T>> Logger { get; }
 
-    protected QueueCache(QueueOptions queueOptions)
+    protected QueueCache(QueueOptions queueOptions, ILoggerFactory loggerFactory)
        : base(queueOptions.Name, new FusionCacheOptions()
        {
            DefaultEntryOptions = new FusionCacheEntryOptions
@@ -36,8 +38,9 @@ public abstract class QueueCache<T> : L1Cache
         _extremeMode = queueOptions.Mode;
         _queue = queueOptions.Queue;
         _signal = queueOptions.Signal;
+        Logger = loggerFactory.CreateLogger<QueueCache<T>>();
     }
-    protected QueueCache(string name, ConcurrentQueue<object> queue, SemaphoreSlim signal)
+    protected QueueCache(string name, ConcurrentQueue<object> queue, SemaphoreSlim signal, ILoggerFactory loggerFactory)
         : base(
             name,
             new FusionCacheOptions
@@ -59,10 +62,11 @@ public abstract class QueueCache<T> : L1Cache
     {
         _queue = queue;
         _signal = signal;
+        Logger = loggerFactory.CreateLogger<QueueCache<T>>();
     }
 
     /// <summary>
-    /// 入队
+    /// 入队（非阻塞）
     /// </summary>
     public void Enqueue(T item)
     {

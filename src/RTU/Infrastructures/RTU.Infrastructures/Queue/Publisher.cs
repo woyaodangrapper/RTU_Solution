@@ -7,8 +7,8 @@ public class Publisher<T> : QueueCache<T>, IPublisher<T>
 {
     private readonly SemaphoreSlim _signal;
 
-    public Publisher(QueueOptions options, ILoggerFactory _loggerFactory)
-      : base(options)
+    public Publisher(QueueOptions options, ILoggerFactory loggerFactory)
+      : base(options, loggerFactory)
     {
         _signal = options.Signal;
     }
