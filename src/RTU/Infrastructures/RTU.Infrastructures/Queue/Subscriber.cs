@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Contracts.Queue;
+using System.Reactive.Subjects;
 
 namespace RTU.Infrastructures.Queue;
 
@@ -8,11 +9,13 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 {
     private readonly SemaphoreSlim _signal;
 
-    public Subscriber(QueueOptions options, ILoggerFactory loggerFactory)
-      : base(options, loggerFactory)
+    public Subscriber(QueueOptions options, ILoggerFactory loggerFactory, Subject<T>? subject = null)
+      : base(options, loggerFactory, subject)
     {
         _signal = options.Signal;
     }
+
+    public IObservable<T>? Observable => Subject;
 
     public bool TryDequeue(out T? message)
     {

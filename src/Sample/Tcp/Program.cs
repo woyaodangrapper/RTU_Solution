@@ -91,19 +91,35 @@ using RTU.Infrastructures.Queue;
 var factory = new QueueFactory<string>();
 
 var publisher = factory.CreatePublisher();
-var subscriber = factory.CreateSubscriber();
+var subscriber1 = factory.CreateSubscriber();
+var subscriber2 = factory.CreateSubscriber();
+subscriber1.Observable!.Subscribe(c => Console.WriteLine($"观察者 1 收到：{c}"));
+subscriber2.Observable!.Subscribe(c => Console.WriteLine($"观察者 2 收到：{c}"));
 
-
-_ = Task.Run(() =>
-{
-    while (true)
-    {
-        subscriber.TryDequeue(out var a, default);
-        Console.WriteLine(a);
-    }
-});
 // 先把数据放入队列
-publisher.TryEnqueue("hello world");
+publisher.TryEnqueue("hello world 1");
+subscriber1.TryDequeue(out var a, default);
+Console.WriteLine($"消费者 1 收到：{a}");
+
+publisher.TryEnqueue("hello world 2");
+subscriber2.TryDequeue(out var b, default);
+Console.WriteLine($"消费者 2 收到：{b}");
 
 
 Console.ReadLine();
+
+// 创建广播用的 Subject
+//using System.Reactive.Subjects;
+
+//var subject = new Subject<string>();
+
+//// 多个消费者订阅
+//subject.Subscribe(data => Console.WriteLine($"消费者 1 收到：{data}"));
+//subject.Subscribe(data => Console.WriteLine($"消费者 2 收到：{data}"));
+//subject.Subscribe(data => Console.WriteLine($"消费者 3 收到：{data}"));
+
+//// 模拟生产者推送数据
+//subject.OnNext("事件 A");
+//subject.OnNext("事件 B");
+
+//subject.OnCompleted();

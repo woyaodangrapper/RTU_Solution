@@ -79,4 +79,5 @@ public interface ISubscriber<T> : IDisposable
     /// </returns>
     IList<T> DequeueAll();
 
+    IObservable<T>? Observable { get; }
 }

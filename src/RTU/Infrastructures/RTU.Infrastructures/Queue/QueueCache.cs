@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using RTU.Infrastructures.Contracts.Queue;
 using RTU.Infrastructures.Extensions;
 using System.Collections.Concurrent;
 using ZiggyCreatures.Caching.Fusion;
@@ -17,53 +16,31 @@ public abstract class QueueCache<T> : L1Cache
     private readonly bool _extremeMode;
     private bool _disposed;
     protected ILogger<QueueCache<T>> Logger { get; }
-
-    protected QueueCache(QueueOptions queueOptions, ILoggerFactory loggerFactory)
-       : base(queueOptions.Name, new FusionCacheOptions()
-       {
-           DefaultEntryOptions = new FusionCacheEntryOptions
-           {
-               Duration = queueOptions.Duration,
-               IsFailSafeEnabled = queueOptions.IsFailSafeEnabled,
-               FailSafeThrottleDuration = queueOptions.FailSafeThrottleDuration,
-           },
-
-       }, new MemoryCacheOptions
-       {
-           SizeLimit = queueOptions.SizeLimit,
-           ExpirationScanFrequency = queueOptions.ExpirationScanFrequency,
-           CompactionPercentage = queueOptions.CompactionPercentage,
-       })
+    protected Subject<T>? Subject { get; }
+    protected QueueCache(QueueOptions queueOptions, ILoggerFactory loggerFactory, Subject<T>? subject = null)
+      : base(queueOptions.Name, new FusionCacheOptions
+      {
+          DefaultEntryOptions = new FusionCacheEntryOptions
+          {
+              Duration = queueOptions.Duration,
+              IsFailSafeEnabled = queueOptions.IsFailSafeEnabled,
+              FailSafeThrottleDuration = queueOptions.FailSafeThrottleDuration,
+          }
+      }, new MemoryCacheOptions
+      {
+          SizeLimit = queueOptions.SizeLimit,
+          ExpirationScanFrequency = queueOptions.ExpirationScanFrequency,
+          CompactionPercentage = queueOptions.CompactionPercentage,
+      })
     {
         _extremeMode = queueOptions.Mode;
         _queue = queueOptions.Queue;
         _signal = queueOptions.Signal;
+
+        Subject = subject;
         Logger = loggerFactory.CreateLogger<QueueCache<T>>();
     }
-    protected QueueCache(string name, ConcurrentQueue<object> queue, SemaphoreSlim signal, ILoggerFactory loggerFactory)
-        : base(
-            name,
-            new FusionCacheOptions
-            {
-                DefaultEntryOptions = new FusionCacheEntryOptions
-                {
-                    Duration = TimeSpan.FromSeconds(30),           // 默认缓存30秒
-                    IsFailSafeEnabled = true,                      // 开启Fail-Safe，容错机制
-                    FailSafeThrottleDuration = TimeSpan.FromSeconds(5), // 失败时，5秒内不用再触发恢复
-                },
-            },
-            new MemoryCacheOptions
-            {
-                SizeLimit = 1000,                     // 大约10MB缓存空间
-                ExpirationScanFrequency = TimeSpan.FromMinutes(1), // 每1分钟清理过期缓存
-                CompactionPercentage = 0.2,                       // 内存压力时，压缩20%
-            }
-        )
-    {
-        _queue = queue;
-        _signal = signal;
-        Logger = loggerFactory.CreateLogger<QueueCache<T>>();
-    }
+
 
     /// <summary>
     /// 入队（非阻塞）
@@ -141,6 +118,7 @@ public abstract class QueueCache<T> : L1Cache
             {
                 // 释放托管资源
                 _signal.Dispose();
+                Subject?.Dispose();
             }
 
             // 释放非托管资源（如果有）

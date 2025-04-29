@@ -1,6 +1,7 @@
 
 
 using Microsoft.Extensions.Logging;
+using RTU.Infrastructures.Contracts.Tcp;
 using RTU.Infrastructures.Extensions.Tcp;
 using RTU.TCPServer.Contracts;
 using System.Diagnostics;

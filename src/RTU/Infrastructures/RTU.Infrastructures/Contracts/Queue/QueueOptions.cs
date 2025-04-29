@@ -51,9 +51,10 @@ public sealed class QueueOptions
 
     public ConcurrentQueue<object> Queue { get; } = new();
 
-    public SemaphoreSlim Signal { get; set; } = new(0);
+    public SemaphoreSlim Signal { get; } = new(0);
 
     private static QueueOptions? _instance;
+
     public static QueueOptions Instance => _instance ??= new QueueOptions();
 
 }

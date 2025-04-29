@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using RTU.Infrastructures.Contracts.Tcp;
 using RTU.TCPServer.Contracts;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
