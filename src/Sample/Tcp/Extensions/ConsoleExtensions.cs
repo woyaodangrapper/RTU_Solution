@@ -1,4 +1,4 @@
-﻿namespace RTU.TCPClient.Extensions;
+﻿namespace Tcp.Extensions;
 
 public static class ConsoleExtensions
 {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging.Abstractions;
-using RTU.TCPClient;
-using RTU.TCPClient.Extensions;
-using RTU.TCPServer;
+using RTU.TcpClient;
+using RTU.TcpClient.Extensions;
+using RTU.TcpServer;
 using System.Net.Sockets;
 
 namespace TcpTest

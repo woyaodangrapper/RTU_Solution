@@ -1,5 +1,5 @@
-﻿using RTU.TCPClient.Contracts;
-using RTU.TCPClient.Extensions;
+﻿using RTU.TcpClient.Contracts;
+using RTU.TcpClient.Extensions;
 using System.Text;
 
 namespace ConsoleApp1;

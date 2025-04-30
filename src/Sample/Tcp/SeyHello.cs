@@ -1,6 +1,6 @@
-﻿using RTU.TCPClient.Contracts;
-using RTU.TCPClient.Extensions;
+﻿using RTU.TcpClient.Contracts;
 using System.Text;
+using Tcp.Extensions;
 
 namespace Tcp;
 

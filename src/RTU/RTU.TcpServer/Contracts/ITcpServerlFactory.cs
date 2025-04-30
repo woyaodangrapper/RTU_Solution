@@ -1,5 +1,5 @@
 
-namespace RTU.TCPServer.Contracts;
+namespace RTU.TcpServer.Contracts;
 
 /// <summary>
 /// 工厂接口，用于创建 TCP 服务器。

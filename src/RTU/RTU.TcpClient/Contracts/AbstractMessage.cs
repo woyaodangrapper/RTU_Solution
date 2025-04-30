@@ -1,4 +1,6 @@
-﻿namespace RTU.TCPClient.Contracts;
+﻿using RTU.Infrastructures.Contracts.Tcp;
+
+namespace RTU.TcpClient.Contracts;
 
 public abstract class AbstractMessage
 {

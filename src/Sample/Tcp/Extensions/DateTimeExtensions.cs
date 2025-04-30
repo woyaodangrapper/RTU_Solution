@@ -1,4 +1,4 @@
-﻿namespace RTU.TCPClient.Extensions;
+﻿namespace Tcp.Extensions;
 public static class DateTimeExtensions
 {
     public static long ToTimestamp(this DateTime dateTime)

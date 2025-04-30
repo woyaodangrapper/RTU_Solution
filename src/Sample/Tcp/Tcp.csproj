@@ -1,16 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\RTU\Infrastructures\RTU.Infrastructures\RTU.Infrastructures.csproj" />
-    <ProjectReference Include="..\..\RTU\RTU.TcpClient\RTU.TcpClient.csproj" />
-    <ProjectReference Include="..\..\RTU\RTU.TcpServer\RTU.TcpServer.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0-preview.3.25171.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\RTU\Infrastructures\RTU.Infrastructures\RTU.Infrastructures.csproj" />
+		<ProjectReference Include="..\..\RTU\RTU.TcpClient\RTU.TcpClient.csproj" />
+		<ProjectReference Include="..\..\RTU\RTU.TcpServer\RTU.TcpServer.csproj" />
+	</ItemGroup>
 
 </Project>

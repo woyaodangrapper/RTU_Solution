@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Contracts.Tcp;
-using RTU.TCPServer.Contracts;
+using RTU.TcpServer.Contracts;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace RTU.TCPServer;
+namespace RTU.TcpServer;
 
 internal abstract class Channel : IDisposable
 {
@@ -14,6 +14,8 @@ internal abstract class Channel : IDisposable
     protected ILogger<Channel> Logger { get; }
 
     internal readonly TcpListener Listener;
+
+    protected readonly CancellationTokenSource CancellationToken = new();
 
     protected Channel(ChannelOptions options,
       ILoggerFactory loggerFactory
@@ -37,16 +39,44 @@ internal abstract class Channel : IDisposable
     protected long SafeIncrementMessageOffset(long offset, long increment) =>
        (offset + increment) % (Buffer.Capacity * 2);
 
+    protected virtual bool IsConnected(Socket socket)
+     => !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
 
-    public virtual void Dispose()
-    {
-        Listener.Dispose();
-        GC.SuppressFinalize(this);
-    }
 
     public static readonly Action<ILogger, string, Exception?> LogTcpListener =
      LoggerMessage.Define<string>(
          LogLevel.Warning,
          new EventId(1, "TcpListenerPort"),
          "TcpListener Port: {Port}");
+
+    private bool _disposed;
+
+    // Existing fields and methods...
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                Listener.Dispose();
+                CancellationToken.Dispose();
+            }
+
+            // Dispose unmanaged resources if any
+            _disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    ~Channel()
+    {
+        Dispose(false);
+    }
 }

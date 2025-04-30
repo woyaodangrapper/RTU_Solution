@@ -3,35 +3,30 @@
 using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Contracts.Tcp;
 using RTU.Infrastructures.Extensions.Tcp;
-using RTU.TcpServer.Contracts;
-using System.Collections.Concurrent;
-using System.Diagnostics;
+using RTU.TcpClient.Contracts;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
-namespace RTU.TcpServer;
-
-internal sealed class TcpServer : Channel, ITcpServer
+namespace RTU.TcpClient;
+internal sealed class TcpClient : Channel, ITcpClient
 {
-    public TcpListener Server { get => Listener; }
+    public System.Net.Sockets.TcpClient Client { get => Listener; }
 
     public Action<Exception>? OnError { get; set; }
-    public Action<TcpListener>? OnSuccess { get; set; }
-    public Action<TcpListener, TcpClient, byte[]>? OnMessage { get; set; }
+    public Action<System.Net.Sockets.TcpClient>? OnSuccess { get; set; }
+    public Action<System.Net.Sockets.TcpClient, byte[]>? OnMessage { get; set; }
 
-    private readonly ConcurrentDictionary<string, TcpClient> _clients = new();
-
-    internal TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
+    internal TcpClient(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory)
     {
-        OnSuccess?.Invoke(Listener);
     }
 
-    public async Task<bool> TryWriteAsync(TcpClient client, byte[] bytes)
+
+    public async Task<bool> TryWriteAsync(byte[] bytes)
     {
         try
         {
-            var stream = client.GetStream();
+            var stream = Listener.GetStream();
             await stream.WriteAsync(bytes).ConfigureAwait(false);
         }
 
@@ -76,10 +71,8 @@ internal sealed class TcpServer : Channel, ITcpServer
         Integrity = Buffer.Read((int)header.Value.TotalLength);
         return true;
     }
-
-    private void ProcessClient(TcpClient client, CancellationToken stoppingToken)
+    private void ProcessClient(System.Net.Sockets.TcpClient client, CancellationToken stoppingToken)
     {
-
         try
         {
             using var stream = client.GetStream();
@@ -94,17 +87,17 @@ internal sealed class TcpServer : Channel, ITcpServer
                 if (bytesRead == 0)
                     break; // Client disconnected
 
-                var stopwatch = Stopwatch.StartNew();
 
-                if (TryEnqueue(buffer.AsMemory(0, bytesRead), out var integrity))
+                if (TryEnqueue(buffer.AsMemory(0, bytesRead), out var Integrity))
                 {
-                    OnMessage?.Invoke(Listener, client, integrity);
+                    OnMessage?.Invoke(client, Integrity);
                 }
             }
         }
         catch (OperationCanceledException e)
         {
             LogTcpListener(Logger, "the task has been canceled", e);
+            OnError?.Invoke(e);
         }
         finally
         {
@@ -117,12 +110,16 @@ internal sealed class TcpServer : Channel, ITcpServer
     {
         try
         {
+            if (!Listener.Connected)
+            {
+                await Listener.ConnectAsync(IPAddress, Port).ConfigureAwait(false);
+            }
+            OnSuccess?.Invoke(Listener);
+
             while (!CancellationToken.IsCancellationRequested)
             {
                 var cancellationToken = CancellationToken.Token;
-                var client = await Listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
-                _clients.AddOrUpdate(client.Client.RemoteEndPoint!.ToString()!, client, (key, oldValue) => client);
-                ProcessClient(client, cancellationToken);
+                ProcessClient(Listener, cancellationToken);
             }
         }
         catch (OperationCanceledException e)
@@ -130,21 +127,14 @@ internal sealed class TcpServer : Channel, ITcpServer
             LogTcpListener(Logger, "mission canceled", e);
             OnError?.Invoke(e);
         }
-        finally
+        catch (SocketException e)
         {
-            Listener.Stop();
+            LogTcpListener(Logger, "SocketException exception in TryExecuteAsync", e);
+            OnError?.Invoke(e);
         }
     }
     protected override void Dispose(bool disposing)
     {
-
-        foreach (var client in _clients.Values)
-        {
-            if (disposing && client.Connected)
-            {
-                client.Dispose();
-            }
-        }
         base.Dispose(disposing);
     }
 }

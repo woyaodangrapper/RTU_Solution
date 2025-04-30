@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using RTU.TCPServer.Contracts;
+using RTU.TcpServer.Contracts;
 
-namespace RTU.TCPServer.Extensions;
+namespace RTU.TcpServer.Extensions;
 
 
 /// <summary>

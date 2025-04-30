@@ -1,7 +1,7 @@
 using RTU.Infrastructures.Extensions.Tcp;
 using System.Net;
 
-namespace RTU.TcpServer.Contracts;
+namespace RTU.TcpClient.Contracts;
 
 /// <summary> The options to create a queue. </summary>
 public sealed class ChannelOptions
