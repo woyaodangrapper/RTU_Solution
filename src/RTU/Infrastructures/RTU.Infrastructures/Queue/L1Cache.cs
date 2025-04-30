@@ -9,6 +9,8 @@ namespace RTU.Infrastructures.Queue;
 /// </summary>
 public abstract class L1Cache : IDisposable
 {
+    private readonly string _name;
+
     private readonly FusionCache _fusionCache;
     private readonly MemoryCache _memoryCache;
     private readonly FusionCacheEntryOptions _entryOptions;
@@ -16,9 +18,12 @@ public abstract class L1Cache : IDisposable
     protected static readonly ConcurrentDictionary<string, (FusionCache, MemoryCache, FusionCacheEntryOptions)>
         CachePool = [];
 
-    protected L1Cache(string name, FusionCacheOptions fusionOptions, MemoryCacheOptions memoryOptions)
+    protected L1Cache(QueueOptions options)
     {
-        if (CachePool.TryGetValue(name, out var cache))
+        ArgumentNullException.ThrowIfNull(options);
+
+        _name = options.Name;
+        if (CachePool.TryGetValue(_name, out var cache))
         {
             _fusionCache = cache.Item1;
             _memoryCache = cache.Item2;
@@ -26,8 +31,21 @@ public abstract class L1Cache : IDisposable
         }
         else
         {
-            _memoryCache = new MemoryCache(memoryOptions);
-            _fusionCache = new FusionCache(fusionOptions, _memoryCache);
+            _memoryCache = new MemoryCache(new MemoryCacheOptions
+            {
+                SizeLimit = options.SizeLimit,
+                ExpirationScanFrequency = options.ExpirationScanFrequency,
+                CompactionPercentage = options.CompactionPercentage,
+            });
+            _fusionCache = new FusionCache(new FusionCacheOptions
+            {
+                DefaultEntryOptions = new FusionCacheEntryOptions
+                {
+                    Duration = options.Duration,
+                    IsFailSafeEnabled = options.IsFailSafeEnabled,
+                    FailSafeThrottleDuration = options.FailSafeThrottleDuration,
+                }
+            }, _memoryCache);
             _entryOptions = new FusionCacheEntryOptions()
             {
                 Duration = TimeSpan.FromSeconds(30),
@@ -35,7 +53,7 @@ public abstract class L1Cache : IDisposable
                 IsFailSafeEnabled = true
             };
 
-            CachePool[name] = (
+            CachePool[_name] = (
                _fusionCache, _memoryCache, _entryOptions
             );
         }

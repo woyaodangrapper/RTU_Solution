@@ -4,21 +4,17 @@ namespace RTU.Infrastructures.Queue;
 
 public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 {
-    private readonly SemaphoreSlim _signal;
 
-    public Subscriber(QueueOptions options, ILoggerFactory loggerFactory, Subject<T>? subject = null)
-      : base(options, loggerFactory, subject)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        _signal = options.Signal;
-    }
+    public Subscriber(QueueOptions options, QueueContext<T> context, ILoggerFactory loggerFactory)
+      : base(options, context, loggerFactory)
+    { }
 
     public IObservable<T>? Observable => Subject;
 
     public bool TryDequeue(out T? message)
     {
         message = default;
-        _signal.Wait(0);
+        Signal.Wait(0);
         try
         {
             return Dequeue(out message, default);
@@ -33,7 +29,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
     {
         message = default;
 
-        _signal.Wait(cancellationToken);
+        Signal.Wait(cancellationToken);
         try
         {
             return Dequeue(out message, cancellationToken);
@@ -48,7 +44,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
     {
         try
         {
-            await _signal.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await Signal.WaitAsync(cancellationToken).ConfigureAwait(false);
             if (Dequeue(out var item, cancellationToken))
                 return (true, item);
             return default;
@@ -98,7 +94,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
         while (TryDequeue(out var item))
         {
             list.Add(item);
-            _signal.Wait();
+            Signal.Wait();
         }
         return list;
     }

@@ -1,8 +1,6 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Extensions;
 using System.Collections.Concurrent;
-using ZiggyCreatures.Caching.Fusion;
 
 namespace RTU.Infrastructures.Queue;
 
@@ -11,56 +9,48 @@ namespace RTU.Infrastructures.Queue;
 /// </summary>
 public abstract class QueueCache<T> : L1Cache
 {
-    private readonly ConcurrentQueue<object> _queue;
-    private readonly SemaphoreSlim _signal;
-    private readonly bool _extremeMode;
+    private ConcurrentQueue<object> Queue { get; }
+    protected SemaphoreSlim Signal { get; }
+
+
+    private readonly bool _mode;
+
     private bool _disposed;
     protected ILogger<QueueCache<T>> Logger { get; }
-    protected Subject<T>? Subject { get; }
+    protected ISubject<T>? Subject { get; }
 
-    protected QueueCache(QueueOptions options, ILoggerFactory loggerFactory, Subject<T>? subject = null)
-#pragma warning disable CA1062 // 子类验证过了
-      : base(options.Name, new FusionCacheOptions
-#pragma warning restore CA1062 // 验证公共方法的参数
-      {
-          DefaultEntryOptions = new FusionCacheEntryOptions
-          {
-              Duration = options.Duration,
-              IsFailSafeEnabled = options.IsFailSafeEnabled,
-              FailSafeThrottleDuration = options.FailSafeThrottleDuration,
-          }
-      }, new MemoryCacheOptions
-      {
-          SizeLimit = options.SizeLimit,
-          ExpirationScanFrequency = options.ExpirationScanFrequency,
-          CompactionPercentage = options.CompactionPercentage,
-      })
+
+    protected QueueCache(QueueOptions options, QueueContext<T> context, ILoggerFactory loggerFactory)
+      : base(options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        _extremeMode = options.Mode;
-        _queue = options.Queue;
-        _signal = options.Signal;
+        ArgumentNullException.ThrowIfNull(context);
+        _mode = options.Mode;
 
-        Subject = subject;
+
+        Queue = context.Queue;
+        Signal = context.Signal;
+        Subject = context.Subject;
         Logger = loggerFactory.CreateLogger<QueueCache<T>>();
     }
+
 
     /// <summary>
     /// 入队（非阻塞）
     /// </summary>
     public void Enqueue(T item)
     {
-        if (_extremeMode)
+        if (_mode)
         {
             // 极限模式：直接入队 item
-            _queue.Enqueue(item!);
+            Queue.Enqueue(item!);
         }
         else
         {
             // 常规模式：存缓存，入队 key
             var key = SnowflakeId.NewSnowflakeId(); // 生成唯一 key
             GetOrAdd(key, item, Util.TryOccupy(item), TimeSpan.FromSeconds(30)); // 存入缓存，30秒有效
-            _queue.Enqueue(key); // 队列里放 key
+            Queue.Enqueue(key); // 队列里放 key
         }
     }
 
@@ -78,9 +68,9 @@ public abstract class QueueCache<T> : L1Cache
             return false;
         }
 
-        if (_queue.TryDequeue(out var raw))
+        if (Queue.TryDequeue(out var raw))
         {
-            if (_extremeMode)
+            if (_mode)
             {
                 // 极限模式：raw 就是 T
                 result = (T)raw!;
@@ -117,8 +107,11 @@ public abstract class QueueCache<T> : L1Cache
             if (disposing)
             {
                 // 释放托管资源
-                _signal.Dispose();
-                Subject?.Dispose();
+                Signal.Dispose();
+                if (Subject is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
             }
 
             // 释放非托管资源（如果有）

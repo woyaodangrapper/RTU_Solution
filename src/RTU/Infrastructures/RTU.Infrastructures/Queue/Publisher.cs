@@ -4,13 +4,11 @@ namespace RTU.Infrastructures.Queue;
 
 public class Publisher<T> : QueueCache<T>, IPublisher<T>
 {
-    private readonly SemaphoreSlim _signal;
 
-    public Publisher(QueueOptions options, ILoggerFactory loggerFactory, Subject<T>? subject = null)
-      : base(options, loggerFactory, subject)
-    {
-        _signal = options.Signal;
-    }
+    public Publisher(QueueOptions options, QueueContext<T> context, ILoggerFactory loggerFactory)
+      : base(options, context, loggerFactory)
+    { }
+
 
     /// <summary>
     /// 向队列中添加消息
@@ -32,7 +30,7 @@ public class Publisher<T> : QueueCache<T>, IPublisher<T>
         }
         finally
         {
-            _signal.Release();
+            Signal.Release();
         }
     }
 

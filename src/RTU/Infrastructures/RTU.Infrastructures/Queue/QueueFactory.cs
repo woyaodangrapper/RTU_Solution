@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Collections.Concurrent;
 
 namespace RTU.Infrastructures.Queue;
 
@@ -7,34 +8,39 @@ internal class QueueFactory<T> : IQueueFactory<T>
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly QueueOptions _queueOptions;
-    private readonly Subject<T>? _subject;
+    private readonly QueueContext<T> _queueContext;
 
-    /// <inheritdoc/>
-    public QueueFactory()
-        : this(NullLoggerFactory.Instance, QueueOptions.Instance, new Subject<T>())
+    private static readonly ConcurrentDictionary<string, (QueueOptions Queue, QueueContext<T> Context)> _instance = new();
+
+    public QueueFactory(string? name = null)
+        : this(NullLoggerFactory.Instance, GetOrCreate(name ?? typeof(T).Name))
     {
     }
 
-    public QueueFactory(ILoggerFactory loggerFactory, QueueOptions queueOptions, Subject<T> subject)
+    public QueueFactory(ILoggerFactory loggerFactory, (QueueOptions Queue, QueueContext<T> Context) options)
     {
-        _loggerFactory = loggerFactory;
-        _queueOptions = queueOptions;
-        _subject = subject;
+        _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+        _queueOptions = options.Queue ?? throw new ArgumentNullException(nameof(options.Queue));
+        _queueContext = options.Context ?? throw new ArgumentNullException(nameof(options.Context));
     }
 
+    private static (QueueOptions, QueueContext<T>) GetOrCreate(string name)
+    {
+        return _instance.GetOrAdd(name, _ => (new QueueOptions(name), new QueueContext<T>()));
+    }
     /// <inheritdoc/>
-    public IPublisher<T> CreatePublisher(QueueOptions options) =>
-        new Publisher<T>(options, _loggerFactory);
+    public IPublisher<T> CreatePublisher(QueueOptions options, QueueContext<T> context) =>
+        new Publisher<T>(options, context, _loggerFactory);
 
     /// <inheritdoc/>
-    public ISubscriber<T> CreateSubscriber(QueueOptions options) =>
-        new Subscriber<T>(options, _loggerFactory);
+    public ISubscriber<T> CreateSubscriber(QueueOptions options, QueueContext<T> context) =>
+        new Subscriber<T>(options, context, _loggerFactory);
 
     /// <inheritdoc/>
     public IPublisher<T> CreatePublisher() =>
-        new Publisher<T>(_queueOptions, _loggerFactory, _subject);
+        new Publisher<T>(_queueOptions, _queueContext, _loggerFactory);
 
     /// <inheritdoc/>
     public ISubscriber<T> CreateSubscriber() =>
-        new Subscriber<T>(_queueOptions, _loggerFactory, _subject);
+        new Subscriber<T>(_queueOptions, _queueContext, _loggerFactory);
 }
