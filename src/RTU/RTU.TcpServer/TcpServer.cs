@@ -11,7 +11,7 @@ namespace RTU.TcpServer;
 
 internal sealed class TcpServer : Channel, ITcpServer
 {
-    public TcpListener Server { get => Listener; }
+    public TcpListener Server => Listener;
 
     public Action<Exception>? OnError { get; set; }
     public Action<TcpListener>? OnSuccess { get; set; }
@@ -20,10 +20,7 @@ internal sealed class TcpServer : Channel, ITcpServer
     private readonly ConcurrentDictionary<string, TcpClient> _clients = new();
 
     internal TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
-        : base(options, loggerFactory)
-    {
-        OnSuccess?.Invoke(Listener);
-    }
+        : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
     public async Task<bool> TrySendAsync(int data, TcpClient? client = null) =>
         await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
 
