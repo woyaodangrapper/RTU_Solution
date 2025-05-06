@@ -36,5 +36,5 @@ public class TcpClientFactory : ITcpClientFactory
      => new TcpClient(_channelOptions, _loggerFactory);
 
     public ITcpClient CreateTcpClient(ChannelOptions options)
-   => new TcpClient(_channelOptions, _loggerFactory);
+     => new TcpClient(_channelOptions, _loggerFactory);
 }

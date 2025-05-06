@@ -1,4 +1,4 @@
-﻿using RTU.TcpClient.Contracts;
+﻿using RTU.Infrastructures.Contracts.Tcp;
 using System.Text;
 using Tcp.Extensions;
 

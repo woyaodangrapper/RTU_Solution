@@ -1,5 +1,3 @@
-
-
 using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Contracts.Tcp;
 using RTU.Infrastructures.Extensions.Tcp;
@@ -21,7 +19,41 @@ internal sealed class TcpClient : Channel, ITcpClient
     {
     }
 
+    public async Task<bool> TrySendAsync(int data) =>
+        await TryWriteAsync(BitConverter.GetBytes(data)).ConfigureAwait(false);
 
+    public async Task<bool> TrySendAsync(float data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(double data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(bool data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(short data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(long data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(byte data) =>
+        await TryWriteAsync([data]).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(char data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(decimal data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(string data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(DateTime data) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync<T>(T data) where T : AbstractMessage, new() =>
+        await TryWriteAsync(data.Serialize()).ConfigureAwait(false);
     public async Task<bool> TryWriteAsync(byte[] bytes)
     {
         try
@@ -45,7 +77,7 @@ internal sealed class TcpClient : Channel, ITcpClient
         return true;
     }
 
-    public bool TryEnqueue(ReadOnlyMemory<byte> data, out byte[] Integrity)
+    private bool TryAssemble(ReadOnlyMemory<byte> data, out byte[] Integrity)
     {
         Integrity = default!;
         Buffer.Write(data.Span);
@@ -71,7 +103,7 @@ internal sealed class TcpClient : Channel, ITcpClient
         Integrity = Buffer.Read((int)header.Value.TotalLength);
         return true;
     }
-    private void ProcessClient(System.Net.Sockets.TcpClient client, CancellationToken stoppingToken)
+    private void ReadLoop(System.Net.Sockets.TcpClient client, CancellationToken stoppingToken)
     {
         try
         {
@@ -88,7 +120,7 @@ internal sealed class TcpClient : Channel, ITcpClient
                     break; // Client disconnected
 
 
-                if (TryEnqueue(buffer.AsMemory(0, bytesRead), out var Integrity))
+                if (TryAssemble(buffer.AsMemory(0, bytesRead), out var Integrity))
                 {
                     OnMessage?.Invoke(client, Integrity);
                 }
@@ -119,7 +151,7 @@ internal sealed class TcpClient : Channel, ITcpClient
             while (!CancellationToken.IsCancellationRequested)
             {
                 var cancellationToken = CancellationToken.Token;
-                ProcessClient(Listener, cancellationToken);
+                ReadLoop(Listener, cancellationToken);
             }
         }
         catch (OperationCanceledException e)

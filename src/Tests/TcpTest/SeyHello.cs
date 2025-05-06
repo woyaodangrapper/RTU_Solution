@@ -1,8 +1,7 @@
-﻿using RTU.TcpClient.Contracts;
-using RTU.TcpClient.Extensions;
+﻿using RTU.Infrastructures.Contracts.Tcp;
 using System.Text;
 
-namespace ConsoleApp1;
+namespace TcpTest;
 
 public class SayHello : AbstractMessage
 {

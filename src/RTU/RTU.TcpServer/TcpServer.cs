@@ -1,5 +1,3 @@
-
-
 using Microsoft.Extensions.Logging;
 using RTU.Infrastructures.Contracts.Tcp;
 using RTU.Infrastructures.Extensions.Tcp;
@@ -26,12 +24,54 @@ internal sealed class TcpServer : Channel, ITcpServer
     {
         OnSuccess?.Invoke(Listener);
     }
+    public async Task<bool> TrySendAsync(int data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
 
-    public async Task<bool> TryWriteAsync(TcpClient client, byte[] bytes)
+    public async Task<bool> TrySendAsync(float data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(double data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(bool data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(short data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(long data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(byte data, TcpClient? client = null) =>
+        await TryWriteAsync([data], client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(char data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(decimal data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(string data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync(DateTime data, TcpClient? client = null) =>
+        await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
+
+    public async Task<bool> TrySendAsync<T>(T data, TcpClient? client = null) where T : AbstractMessage, new() =>
+        await TryWriteAsync(data.Serialize(), client).ConfigureAwait(false);
+
+
+
+    public async Task<bool> TryWriteAsync(byte[] bytes, TcpClient? client = null)
     {
+        var header = new MessageHeader(length => (int)length + bytes.Length);
+
+        header.ToBytes(out byte[] headerBytes);
+        bytes = [.. headerBytes, .. bytes];
+
         try
         {
-            var stream = client.GetStream();
+            var stream = _clients.GetStream(client);
             await stream.WriteAsync(bytes).ConfigureAwait(false);
         }
 
@@ -50,7 +90,10 @@ internal sealed class TcpServer : Channel, ITcpServer
         return true;
     }
 
-    public bool TryEnqueue(ReadOnlyMemory<byte> data, out byte[] Integrity)
+
+
+
+    private bool TryAssemble(ReadOnlyMemory<byte> data, out byte[] Integrity)
     {
         Integrity = default!;
         Buffer.Write(data.Span);
@@ -77,7 +120,7 @@ internal sealed class TcpServer : Channel, ITcpServer
         return true;
     }
 
-    private void ProcessClient(TcpClient client, CancellationToken stoppingToken)
+    private void ReadLoop(TcpClient client, CancellationToken stoppingToken)
     {
 
         try
@@ -96,7 +139,7 @@ internal sealed class TcpServer : Channel, ITcpServer
 
                 var stopwatch = Stopwatch.StartNew();
 
-                if (TryEnqueue(buffer.AsMemory(0, bytesRead), out var integrity))
+                if (TryAssemble(buffer.AsMemory(0, bytesRead), out var integrity))
                 {
                     OnMessage?.Invoke(Listener, client, integrity);
                 }
@@ -113,6 +156,7 @@ internal sealed class TcpServer : Channel, ITcpServer
 
 
     }
+
     public async Task TryExecuteAsync()
     {
         try
@@ -122,7 +166,7 @@ internal sealed class TcpServer : Channel, ITcpServer
                 var cancellationToken = CancellationToken.Token;
                 var client = await Listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
                 _clients.AddOrUpdate(client.Client.RemoteEndPoint!.ToString()!, client, (key, oldValue) => client);
-                ProcessClient(client, cancellationToken);
+                _ = Task.Run(() => ReadLoop(client, cancellationToken));
             }
         }
         catch (OperationCanceledException e)
