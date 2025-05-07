@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using RTU.Infrastructures.Contracts;
 using RTU.TcpClient.Contracts;
 using RTU.TcpServer.Contracts;
 using System.Net;
@@ -6,7 +7,7 @@ using System.Net.Sockets;
 
 namespace RTU.TcpClient;
 
-internal abstract class Channel : IDisposable
+internal abstract class Channel : IDisposable, IProtocol
 {
     protected CircularBuffer Buffer { get; }
 
@@ -17,6 +18,7 @@ internal abstract class Channel : IDisposable
     protected IPAddress IPAddress { get; }
 
     protected int Port { get; }
+
 
     protected readonly CancellationTokenSource CancellationToken = new();
 

@@ -1,4 +1,3 @@
-
 namespace RTU.TcpServer.Contracts;
 
 /// <summary>

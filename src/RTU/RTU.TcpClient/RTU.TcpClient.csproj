@@ -3,8 +3,5 @@
 	<ItemGroup>
 		<ProjectReference Include="..\Infrastructures\RTU.Infrastructures\RTU.Infrastructures.csproj" />
 	</ItemGroup>
-	<ItemGroup>
-	  <Folder Include="Extensions\" />
-	</ItemGroup>
 
 </Project>

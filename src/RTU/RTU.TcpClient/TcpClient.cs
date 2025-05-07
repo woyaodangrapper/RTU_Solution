@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RTU.Infrastructures.Contracts.Tcp;
 using RTU.Infrastructures.Extensions.Tcp;
 using RTU.TcpClient.Contracts;
@@ -14,7 +15,9 @@ internal sealed class TcpClient : Channel, ITcpClient
     public Action<System.Net.Sockets.TcpClient>? OnSuccess { get; set; }
     public Action<System.Net.Sockets.TcpClient, byte[]>? OnMessage { get; set; }
 
-    internal TcpClient(ChannelOptions options, ILoggerFactory loggerFactory)
+    public TcpClient() : base(new("default"), NullLoggerFactory.Instance) { }
+
+    public TcpClient(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory)
     {
     }

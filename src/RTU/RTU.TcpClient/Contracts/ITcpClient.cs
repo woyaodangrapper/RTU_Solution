@@ -1,9 +1,12 @@
+using RTU.Infrastructures.Contracts;
 using RTU.Infrastructures.Contracts.Tcp;
 
 namespace RTU.TcpClient.Contracts;
 
-/// <summary>Factory to create queue publishers and subscribers. </summary>
-public interface ITcpClient
+/// <summary>
+/// Defines the contract for a TCP client that implements protocol communication capabilities.
+/// </summary>
+public interface ITcpClient : IProtocol
 {
     /// <summary>
     /// 尝试异步执行TCP客户端操作，通常用于连接操作。

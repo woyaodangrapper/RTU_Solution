@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using RTU.Infrastructures;
+using RTU.Infrastructures.Contracts;
 using RTU.Infrastructures.Queue;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -33,6 +35,33 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddSingleton<IQueueFactory<T>>(provider =>
             new QueueFactory<T>(name));
+        return services;
+    }
+
+
+    /// <summary>
+    /// 注册协议清单（Protocol Manifest）服务，将通过反射扫描实现 <see cref="IProtocol"/> 接口的所有类型，
+    /// 并以单例方式注入 <see cref="IProtocolManifest"/>。
+    /// </summary>
+    /// <param name="services">要注册服务的 <see cref="IServiceCollection"/> 实例。</param>
+    /// <returns>用于链式调用的 <see cref="IServiceCollection"/> 实例。</returns>
+    public static IServiceCollection AddProtocolManifest(this IServiceCollection services)
+    {
+
+        Type protocolType = typeof(IProtocol);
+
+        IEnumerable<Type>? protocolTypes = AppDomain.CurrentDomain.GetAssemblies()
+        .SelectMany(assembly => assembly.GetTypes())
+        .Where(type => protocolType.IsAssignableFrom(type)
+                       && !type.IsInterface
+                       && !type.IsAbstract);
+
+
+        foreach (var manifest in protocolTypes ?? [])
+        {
+            var closedType = typeof(ProtocolManifest<>).MakeGenericType(manifest);
+            services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(IProtocolManifest), closedType));
+        }
         return services;
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RTU.Infrastructures.Contracts.Tcp;
 using RTU.Infrastructures.Extensions.Tcp;
 using RTU.TcpServer.Contracts;
@@ -19,7 +20,9 @@ internal sealed class TcpServer : Channel, ITcpServer
 
     private readonly ConcurrentDictionary<string, TcpClient> _clients = new();
 
-    internal TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
+    public TcpServer() : base(new("default"), NullLoggerFactory.Instance) { }
+
+    public TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
     public async Task<bool> TrySendAsync(int data, TcpClient? client = null) =>
         await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);

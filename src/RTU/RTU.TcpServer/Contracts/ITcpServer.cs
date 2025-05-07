@@ -1,10 +1,13 @@
+using RTU.Infrastructures.Contracts;
 using RTU.Infrastructures.Contracts.Tcp;
 using System.Net.Sockets;
 
 namespace RTU.TcpServer.Contracts;
 
-/// <summary>Factory to create queue publishers and subscribers. </summary>
-public interface ITcpServer
+/// <summary>
+/// Defines the contract for a TCP server that implements protocol communication capabilities.
+/// </summary>
+public interface ITcpServer : IProtocol
 {
     /// <summary>
     /// 尝试从队列中非阻塞地获取一条消息，使用默认的取消令牌（不支持取消）。
