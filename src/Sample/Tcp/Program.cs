@@ -1,4 +1,5 @@
 ﻿using RTU.Infrastructures.Contracts;
+using System.Reflection;
 
 var console = LoggerFactory.Create(builder =>
 {
@@ -15,6 +16,12 @@ _ = builder.Services.AddTcpClientFactory();
 
 _ = builder.Services.AddProtocolManifest();
 
+var referencedAssemblies = Assembly.GetExecutingAssembly().GetReferencedAssemblies();
+var assemblys = referencedAssemblies.Select(assembly => Assembly.Load(assembly.Name));
+
+RTU.Infrastructures.Extensions.Util.GetProtocolList(type =>
+{
+}, assemblys);
 
 var executor = builder.Services.BuildServiceProvider().GetRequiredService<IEnumerable<IProtocolManifest>>();
 
