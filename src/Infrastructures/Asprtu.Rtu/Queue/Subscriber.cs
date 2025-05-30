@@ -58,7 +58,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
         for (int i = 0; i < batchSize; i++)
         {
             var (success, item) = await TryDequeueAsync(cancellationToken).ConfigureAwait(false);
-            if (success) list.Add(item);
+            if (success && item is not null) list.Add(item);
             else break;
         }
         return list;
@@ -70,7 +70,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 
         for (int i = 0; i < batchSize; i++)
         {
-            if (TryDequeue(out var item, cancellationToken))
+            if (TryDequeue(out var item, cancellationToken) && item is not null)
             {
                 list.Add(item);
             }
@@ -88,7 +88,7 @@ public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
     public IList<T> DequeueAll()
     {
         var list = new List<T>();
-        while (TryDequeue(out var item))
+        while (TryDequeue(out var item) && item is not null)
         {
             list.Add(item);
             Signal.Wait();

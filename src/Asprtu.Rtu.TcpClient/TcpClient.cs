@@ -4,13 +4,14 @@ using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpClient.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
 namespace Asprtu.Rtu.TcpClient;
 
 [LibraryCapacities]
-internal sealed class TcpClient : Channel, ITcpClient
+public sealed class TcpClient : Channel, ITcpClient
 {
     public System.Net.Sockets.TcpClient Client => Listener;
 
@@ -60,7 +61,7 @@ internal sealed class TcpClient : Channel, ITcpClient
     public async Task<bool> TrySendAsync(DateTime data) =>
         await TryWriteAsync(ByteConverter.GetBytes(data)).ConfigureAwait(false);
 
-    public async Task<bool> TrySendAsync<T>(T data) where T : AbstractMessage, new() =>
+    public async Task<bool> TrySendAsync<T>([NotNull] T data) where T : AbstractMessage, new() =>
         await TryWriteAsync(data.Serialize()).ConfigureAwait(false);
 
     public async Task<bool> TryWriteAsync(byte[] bytes)
@@ -173,8 +174,5 @@ internal sealed class TcpClient : Channel, ITcpClient
         }
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-    }
+    protected override void Dispose(bool disposing) => base.Dispose(disposing);
 }

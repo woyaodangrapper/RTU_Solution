@@ -1,16 +1,17 @@
-﻿using Microsoft.Extensions.Logging;
-using Asprtu.Rtu.Contracts;
+﻿using Asprtu.Rtu.Contracts;
 using Asprtu.Rtu.TcpClient.Contracts;
+using Microsoft.Extensions.Logging;
 using RTU.TcpServer.Contracts;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
 
 namespace Asprtu.Rtu.TcpClient;
 
-internal abstract class Channel : IDisposable, IContracts
+public abstract class Channel : IDisposable, IContracts
 {
     protected CircularBuffer Buffer { get; }
-
+    protected CancellationTokenSource CancellationToken { get; } = new();
     protected ILogger<Channel> Logger { get; }
 
     internal readonly System.Net.Sockets.TcpClient Listener;
@@ -19,10 +20,7 @@ internal abstract class Channel : IDisposable, IContracts
 
     protected int Port { get; }
 
-
-    protected readonly CancellationTokenSource CancellationToken = new();
-
-    protected Channel(ChannelOptions options,
+    protected Channel([NotNull] ChannelOptions options,
       ILoggerFactory loggerFactory
     )
     {
@@ -33,8 +31,7 @@ internal abstract class Channel : IDisposable, IContracts
         IPAddress = options.IPAddress;
     }
 
-
-    protected virtual bool IsConnected(Socket socket)
+    protected virtual bool IsConnected([NotNull] Socket socket)
      => !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
 
     public static readonly Action<ILogger, string, Exception?> LogTcpListener =

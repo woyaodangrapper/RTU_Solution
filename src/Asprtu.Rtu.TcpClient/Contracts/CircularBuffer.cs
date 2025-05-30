@@ -1,16 +1,13 @@
 ﻿namespace RTU.TcpServer.Contracts;
 
-internal sealed class CircularBuffer
+public sealed class CircularBuffer
 {
     private byte[] buffer;
     private int readIndex;
     private int writeIndex;
     private int count;
 
-    internal CircularBuffer(int capacity)
-    {
-        buffer = new byte[capacity];
-    }
+    internal CircularBuffer(int capacity) => buffer = new byte[capacity];
 
     internal int Capacity => buffer.Length;
 
@@ -19,7 +16,6 @@ internal sealed class CircularBuffer
     internal bool IsEmpty => count == 0;
 
     internal bool IsFull => count == Capacity;
-
 
     /// <summary>
     /// 写入数据到环形缓存，支持自动扩容和覆盖旧数据
@@ -129,5 +125,4 @@ internal sealed class CircularBuffer
         readIndex = 0;
         writeIndex = count;
     }
-
 }

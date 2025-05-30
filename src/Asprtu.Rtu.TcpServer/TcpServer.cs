@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -62,7 +63,7 @@ public sealed class TcpServer : Channel, ITcpServer
     public async Task<bool> TrySendAsync(DateTime data, TcpClient? client = null) =>
         await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
 
-    public async Task<bool> TrySendAsync<T>(T data, TcpClient? client = null) where T : AbstractMessage, new() =>
+    public async Task<bool> TrySendAsync<T>([NotNull] T data, TcpClient? client = null) where T : AbstractMessage, new() =>
         await TryWriteAsync(data.Serialize(), client).ConfigureAwait(false);
 
     public async Task<bool> TryWriteAsync(byte[] bytes, TcpClient? client = null)

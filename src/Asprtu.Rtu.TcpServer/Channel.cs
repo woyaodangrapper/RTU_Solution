@@ -1,21 +1,20 @@
-﻿using Microsoft.Extensions.Logging;
-using Asprtu.Rtu.Contracts.Tcp;
+﻿using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.TcpServer.Contracts;
+using Microsoft.Extensions.Logging;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Asprtu.Rtu.TcpServer;
 
-internal abstract class Channel : IDisposable
+public abstract class Channel : IDisposable
 {
     protected CircularBuffer Buffer { get; }
+    protected CancellationTokenSource CancellationToken { get; } = new();
 
     protected ILogger<Channel> Logger { get; }
 
     internal readonly TcpListener Listener;
-
-    protected readonly CancellationTokenSource CancellationToken = new();
 
     protected Channel(ChannelOptions options,
       ILoggerFactory loggerFactory
@@ -41,7 +40,6 @@ internal abstract class Channel : IDisposable
 
     protected virtual bool IsConnected(Socket socket)
      => !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
-
 
     public static readonly Action<ILogger, string, Exception?> LogTcpListener =
      LoggerMessage.Define<string>(
