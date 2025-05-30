@@ -1,3 +1,4 @@
+using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpServer.Contracts;
@@ -10,7 +11,8 @@ using System.Runtime.InteropServices;
 
 namespace Asprtu.Rtu.TcpServer;
 
-internal sealed class TcpServer : Channel, ITcpServer
+[LibraryCapacities]
+public sealed class TcpServer : Channel, ITcpServer
 {
     public TcpListener Server => Listener;
 

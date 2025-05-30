@@ -1,3 +1,4 @@
+using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpClient.Contracts;
@@ -8,9 +9,10 @@ using System.Runtime.InteropServices;
 
 namespace Asprtu.Rtu.TcpClient;
 
+[LibraryCapacities]
 internal sealed class TcpClient : Channel, ITcpClient
 {
-    public System.Net.Sockets.TcpClient Client { get => Listener; }
+    public System.Net.Sockets.TcpClient Client => Listener;
 
     public Action<Exception>? OnError { get; set; }
     public Action<System.Net.Sockets.TcpClient>? OnSuccess { get; set; }
