@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Asprtu.Rtu.Queue;
+﻿namespace Asprtu.Rtu.Queue;
 
 public class Subscriber<T> : QueueCache<T>, ISubscriber<T>
 {

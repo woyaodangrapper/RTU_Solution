@@ -3,6 +3,6 @@
 
 
 	<ItemGroup>
-		<ProjectReference Include="..\Infrastructures\Asprtu.Rtu.Core\Asprtu.Rtu.csproj" />
+		<ProjectReference Include="..\Infrastructures\Asprtu.Rtu\Asprtu.Rtu.csproj" />
 	</ItemGroup>
 </Project>

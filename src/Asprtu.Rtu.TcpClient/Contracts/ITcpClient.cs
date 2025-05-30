@@ -6,7 +6,7 @@ namespace Asprtu.Rtu.TcpClient.Contracts;
 /// <summary>
 /// Defines the contract for a TCP client that implements protocol communication capabilities.
 /// </summary>
-public interface ITcpClient : IProtocol
+public interface ITcpClient : IContracts
 {
     /// <summary>
     /// 尝试异步执行TCP客户端操作，通常用于连接操作。
@@ -121,5 +121,4 @@ public interface ITcpClient : IProtocol
     /// 消息回调，处理接收到的消息。
     /// </summary>
     Action<System.Net.Sockets.TcpClient, byte[]>? OnMessage { get; set; }
-
 }

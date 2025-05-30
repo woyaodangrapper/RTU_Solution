@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
 namespace Asprtu.Rtu.Queue;
 
@@ -20,8 +18,8 @@ internal class QueueFactory<T> : IQueueFactory<T>
     public QueueFactory(ILoggerFactory loggerFactory, (QueueOptions Queue, QueueContext<T> Context) options)
     {
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
-        _queueOptions = options.Queue ?? throw new ArgumentNullException(nameof(options.Queue));
-        _queueContext = options.Context ?? throw new ArgumentNullException(nameof(options.Context));
+        _queueOptions = options.Queue ?? throw new ArgumentNullException(nameof(options));
+        _queueContext = options.Context ?? throw new ArgumentNullException(nameof(options));
     }
 
     private static (QueueOptions, QueueContext<T>) GetOrCreate(string name)

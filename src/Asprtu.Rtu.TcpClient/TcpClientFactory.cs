@@ -1,6 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Asprtu.Rtu.TcpClient.Contracts;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Asprtu.Rtu.TcpClient.Contracts;
 using System.Collections.Concurrent;
 
 namespace Asprtu.Rtu.TcpClient;
@@ -9,7 +9,6 @@ public class TcpClientFactory : ITcpClientFactory
 {
     private readonly ILoggerFactory _loggerFactory;
     private readonly ChannelOptions _channelOptions;
-
 
     private static readonly ConcurrentDictionary<string, ChannelOptions> _instance = new();
     private static readonly Lazy<TcpClientFactory> instance = new(() => new());
@@ -28,13 +27,11 @@ public class TcpClientFactory : ITcpClientFactory
     }
 
     private static ChannelOptions GetOrCreate(string name)
-    {
-        return _instance.GetOrAdd(name, _ => new ChannelOptions(name));
-    }
+        => _instance.GetOrAdd(name, _ => new ChannelOptions(name));
 
     public ITcpClient CreateTcpClient()
-     => new TcpClient(_channelOptions, _loggerFactory);
+        => new TcpClient(_channelOptions, _loggerFactory);
 
     public ITcpClient CreateTcpClient(ChannelOptions options)
-     => new TcpClient(_channelOptions, _loggerFactory);
+        => new TcpClient(_channelOptions, _loggerFactory);
 }

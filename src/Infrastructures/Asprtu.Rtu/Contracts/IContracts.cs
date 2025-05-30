@@ -1,5 +1,6 @@
 ﻿namespace Asprtu.Rtu.Contracts;
-public interface IProtocol
+
+public interface IContracts
 {
     public string? Name => null;
 }

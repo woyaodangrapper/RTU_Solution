@@ -45,7 +45,7 @@ public abstract class QueueCache<T> : L1Cache
         {
             // 常规模式：存缓存，入队 key
             var key = SnowflakeId.NewSnowflakeId(); // 生成唯一 key
-            GetOrAdd(key, item, Util.TryOccupy(item), TimeSpan.FromSeconds(30)); // 存入缓存，30秒有效
+            GetOrAdd(key, item, MemorySizeCalculator.TryOccupy(item), TimeSpan.FromSeconds(30)); // 存入缓存，30秒有效
             Queue.Enqueue(key); // 队列里放 key
         }
     }

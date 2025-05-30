@@ -1,6 +1,3 @@
-using Asprtu.Rtu;
-using Asprtu.Rtu.Contracts;
-using Asprtu.Rtu.Extensions;
 using Asprtu.Rtu.Queue;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -36,26 +33,6 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddSingleton<IQueueFactory<T>>(provider =>
             new QueueFactory<T>(name));
-        return services;
-    }
-
-    /// <summary>
-    /// 注册协议清单（Protocol Manifest）服务。
-    ///
-    /// 会扫描当前 AppDomain 中实现 <see cref="IProtocol"/> 接口的所有非抽象类型，
-    /// 并为每个协议类型创建对应的 <see cref="ProtocolManifest{T}"/> 单例，
-    /// 注入为 <see cref="IProtocolManifest"/>。
-    /// </summary>
-    /// <param name="services">要注册服务的 <see cref="IServiceCollection"/> 实例。</param>
-    /// <returns>用于链式调用的 <see cref="IServiceCollection"/> 实例。</returns>
-    public static IServiceCollection AddProtocolManifest(this IServiceCollection services)
-    {
-        Util.GetProtocolList(type =>
-        {
-            var closedType = typeof(ProtocolManifest<>).MakeGenericType(type);
-            services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(IProtocolManifest), closedType));
-        });
-
         return services;
     }
 }

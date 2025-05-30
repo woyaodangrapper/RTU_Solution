@@ -7,14 +7,11 @@ namespace Asprtu.Rtu.TcpServer.Contracts;
 /// <summary>
 /// Defines the contract for a TCP server that implements protocol communication capabilities.
 /// </summary>
-public interface ITcpServer : IProtocol
+public interface ITcpServer : IContracts
 {
     /// <summary>
-    /// 尝试从队列中非阻塞地获取一条消息，使用默认的取消令牌（不支持取消）。
+    /// 尝试启动一个TCP服务器，监听指定的端口。
     /// </summary>
-    /// <param name="message">
-    /// 方法返回时，若操作成功则包含取出的消息；否则为类型 <typeparamref name="T"/> 的默认值。
-    /// </param>
     Task TryExecuteAsync();
 
     /// <summary>
@@ -137,5 +134,4 @@ public interface ITcpServer : IProtocol
     /// 消息回调事件，处理接收到的 TCP 消息。
     /// </summary>
     Action<TcpListener, TcpClient, byte[]>? OnMessage { get; set; }
-
 }

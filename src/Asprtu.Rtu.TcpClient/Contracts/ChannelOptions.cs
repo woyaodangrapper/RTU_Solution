@@ -13,7 +13,7 @@ public sealed class ChannelOptions
     public ChannelOptions(string channelName)
     {
         ChannelName = channelName;
-        IPAddress = IPAddressExtensions.GetLocalIPAddress() ?? throw new Exception("無法獲取本機IP，進行TCP服務代理失敗！");
+        IPAddress = IPAddressExtensions.GetLocalIPAddress() ?? throw new InvalidOperationException("無法獲取本機IP，進行TCP服務代理失敗！");
         Port = IPAddressExtensions.GenerateRandomPort();
     }
 

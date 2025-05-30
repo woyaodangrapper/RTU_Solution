@@ -7,7 +7,7 @@ using System.Net.Sockets;
 
 namespace Asprtu.Rtu.TcpClient;
 
-internal abstract class Channel : IDisposable, IProtocol
+internal abstract class Channel : IDisposable, IContracts
 {
     protected CircularBuffer Buffer { get; }
 

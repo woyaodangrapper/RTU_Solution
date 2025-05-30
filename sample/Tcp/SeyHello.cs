@@ -1,4 +1,4 @@
-﻿using RTU.Infrastructures.Contracts.Tcp;
+﻿using Asprtu.Rtu.Contracts.Tcp;
 using System.Text;
 using Tcp.Extensions;
 
@@ -28,6 +28,7 @@ public class SayHello : AbstractMessage
 
         return messageBytes;
     }
+
     protected override int CalculateMessageLength()
     {
         // 名称字段

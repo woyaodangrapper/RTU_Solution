@@ -13,6 +13,8 @@ public class TcpServerFactory : ITcpServerFactory
     private static readonly ConcurrentDictionary<string, ChannelOptions> _instance = new();
     private static readonly Lazy<TcpServerFactory> instance = new(() => new());
 
+    public static TcpServerFactory Instance => instance.Value;
+
     public TcpServerFactory(string name = "default")
        : this(NullLoggerFactory.Instance, GetOrCreate(name))
     {
@@ -25,13 +27,11 @@ public class TcpServerFactory : ITcpServerFactory
     }
 
     private static ChannelOptions GetOrCreate(string name)
-    {
-        return _instance.GetOrAdd(name, _ => new ChannelOptions(name));
-    }
+        => _instance.GetOrAdd(name, _ => new ChannelOptions(name));
 
     public ITcpServer CreateTcpServer()
-     => new TcpServer(_channelOptions, _loggerFactory);
+        => new TcpServer(_channelOptions, _loggerFactory);
 
     public ITcpServer CreateTcpServer(ChannelOptions options)
-     => new TcpServer(_channelOptions, _loggerFactory);
+        => new TcpServer(_channelOptions, _loggerFactory);
 }
