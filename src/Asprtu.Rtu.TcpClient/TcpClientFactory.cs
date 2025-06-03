@@ -10,7 +10,9 @@ public class TcpClientFactory : ITcpClientFactory
     private readonly ILoggerFactory _loggerFactory;
     private readonly ChannelOptions _channelOptions;
 
-    private static readonly ConcurrentDictionary<string, ChannelOptions> _instance = new();
+    private static readonly ConcurrentDictionary<string, ChannelOptions> _instance
+        = new(StringComparer.OrdinalIgnoreCase);
+
     private static readonly Lazy<TcpClientFactory> instance = new(() => new());
 
     public static TcpClientFactory Instance => instance.Value;
@@ -34,4 +36,8 @@ public class TcpClientFactory : ITcpClientFactory
 
     public ITcpClient CreateTcpClient(ChannelOptions options)
         => new TcpClient(_channelOptions, _loggerFactory);
+
+    public TcpClient Create(string name) => new(GetOrCreate(name), _loggerFactory);
+
+    public bool Remove(string name) => _instance.Remove(name, out var _);
 }

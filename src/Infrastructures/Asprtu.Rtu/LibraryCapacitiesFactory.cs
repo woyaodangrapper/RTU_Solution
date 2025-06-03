@@ -1,0 +1,43 @@
+﻿using Asprtu.Rtu.Contracts;
+using System.Collections.Concurrent;
+
+namespace Asprtu.Rtu;
+
+public class LibraryCapacitiesFactory<T>(ILibraryFactory<T> factory) : ILibraryCapacitiesFactory<T>
+    where T : class, IContracts
+{
+    private readonly ILibraryFactory<T> _factory = factory;
+
+    private readonly ConcurrentDictionary<string, T> _dict = new(StringComparer.OrdinalIgnoreCase);
+
+    public T Add(string name)
+    {
+        var instance = _factory.Create(name)
+            ?? throw new InvalidOperationException($"工厂未能创建出名称为 '{name}' 的 {typeof(T).Name} 实例");
+
+        if (!_dict.TryAdd(name, instance))
+        {
+            (instance as IDisposable)?.Dispose();
+            throw new InvalidOperationException($"已存在同名的 {typeof(T).Name}：{name}");
+        }
+
+        return instance;
+    }
+
+    public bool Remove(string name)
+    {
+        _factory.Remove(name);
+
+        if (_dict.TryRemove(name, out var instance))
+        {
+            (instance as IDisposable)?.Dispose();
+            return true;
+        }
+
+        return false;
+    }
+
+    public IReadOnlyCollection<T> All => [.. _dict.Values];
+
+    public T Create(string name) => _factory.Create(name);
+}

@@ -62,10 +62,7 @@ public abstract class L1Cache : IDisposable
     /// <summary>
     /// 获取缓存项，如果缓存不存在则返回默认值
     /// </summary>
-    public TItem? Get<TItem>(object key)
-    {
-        return _fusionCache.GetOrDefault<TItem>($"RTU:{key}");
-    }
+    public TItem? Get<TItem>(object key) => _fusionCache.GetOrDefault<TItem>($"RTU:{key}");
 
     /// <summary>
     /// 设置缓存项
@@ -105,10 +102,7 @@ public abstract class L1Cache : IDisposable
         );
     }
 
-    public void Remove(object key)
-    {
-        _fusionCache.Remove($"RTU:{key}");
-    }
+    public void Remove(object key) => _fusionCache.Remove($"RTU:{key}");
 
     private bool _disposed;
 
