@@ -1,6 +1,7 @@
 ﻿using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.TcpServer.Contracts;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -16,7 +17,7 @@ public abstract class Channel : IDisposable
 
     internal readonly TcpListener Listener;
 
-    protected Channel(ChannelOptions options,
+    protected Channel([NotNull] ChannelOptions options,
       ILoggerFactory loggerFactory
     )
     {
@@ -38,7 +39,7 @@ public abstract class Channel : IDisposable
     protected long SafeIncrementMessageOffset(long offset, long increment) =>
        (offset + increment) % (Buffer.Capacity * 2);
 
-    protected virtual bool IsConnected(Socket socket)
+    protected virtual bool IsConnected([NotNull] Socket socket)
      => !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
 
     public static readonly Action<ILogger, string, Exception?> LogTcpListener =

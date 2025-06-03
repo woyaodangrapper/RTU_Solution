@@ -23,6 +23,10 @@ public sealed class TcpClient : Channel, ITcpClient
     {
     }
 
+    public TcpClient(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
+    {
+    }
+
     public TcpClient(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory)
     {

@@ -27,6 +27,10 @@ public sealed class TcpServer : Channel, ITcpServer
     {
     }
 
+    public TcpServer(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
+    {
+    }
+
     public TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
 
