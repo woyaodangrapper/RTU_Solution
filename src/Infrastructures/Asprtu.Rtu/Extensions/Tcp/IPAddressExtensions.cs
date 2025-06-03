@@ -8,8 +8,19 @@ public static class IPAddressExtensions
 {
     public static IPAddress? GetLocalIPAddress()
     {
+        string[] excludedKeywords =
+        [
+            "virtual", "vmware", "hyper-v", "loopback", "tunneling", "docker", "bluetooth"
+        ];
+
         var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces()
-            .Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            .Where(n =>
+                n.OperationalStatus == OperationalStatus.Up &&
+                n.NetworkInterfaceType != NetworkInterfaceType.Loopback &&
+                !excludedKeywords.Any(keyword =>
+                    n.Description?.ToUpperInvariant().Contains(keyword.ToUpperInvariant(), StringComparison.InvariantCultureIgnoreCase) == true ||
+                    n.Name?.ToUpperInvariant().Contains(keyword, StringComparison.InvariantCultureIgnoreCase) == true)
+            )
             .OrderByDescending(n => n.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
             .ThenByDescending(n => n.Speed);
 
@@ -17,18 +28,18 @@ public static class IPAddressExtensions
         {
             var ipProperties = networkInterface.GetIPProperties();
             var unicastAddresses = ipProperties.UnicastAddresses
-                .Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork);
+                .Where(a =>
+                    a.Address.AddressFamily == AddressFamily.InterNetwork &&
+                    !IPAddress.IsLoopback(a.Address) &&
+                    !a.Address.ToString().StartsWith("169.254", StringComparison.InvariantCulture)); // 修复 CA1310
 
             foreach (var address in unicastAddresses)
             {
-                if (IPAddress.IsLoopback(address.Address))
-                    continue;
-
                 return address.Address;
             }
         }
 
-        return null; // 如果无法找到可用的 IPv4 地址，则返回 null
+        return null; // 如果无法找到合适的 IPv4 地址
     }
 
     public static int GenerateRandomPort()
@@ -37,7 +48,7 @@ public static class IPAddressExtensions
         const int maxPort = 65535;
         const int maxAttempts = 100;
 
-        Random random = new Random();
+        Random random = new();
         int port;
         int attempt = 0;
 

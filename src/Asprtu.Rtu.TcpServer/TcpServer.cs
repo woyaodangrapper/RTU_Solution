@@ -2,6 +2,7 @@ using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpServer.Contracts;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
@@ -27,6 +28,7 @@ public sealed class TcpServer : Channel, ITcpServer
     {
     }
 
+    [ActivatorUtilitiesConstructor]
     public TcpServer(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
     {
     }

@@ -2,6 +2,7 @@ using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpClient.Contracts;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +24,7 @@ public sealed class TcpClient : Channel, ITcpClient
     {
     }
 
+    [ActivatorUtilitiesConstructor]
     public TcpClient(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
     {
     }
