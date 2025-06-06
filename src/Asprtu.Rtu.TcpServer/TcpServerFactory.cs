@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Asprtu.Rtu.TcpServer;
 
@@ -31,11 +32,14 @@ public class TcpServerFactory : ITcpServerFactory
     private static ChannelOptions GetOrCreate(string name)
         => _instance.GetOrAdd(name, _ => new ChannelOptions(name));
 
+    private static ChannelOptions AddOrCreate(string name, ChannelOptions channel)
+        => _instance.GetOrAdd(name, _ => channel);
+
     public ITcpServer CreateTcpServer()
         => new TcpServer(_channelOptions, _loggerFactory);
 
-    public ITcpServer CreateTcpServer(ChannelOptions options)
-        => new TcpServer(_channelOptions, _loggerFactory);
+    public ITcpServer CreateTcpServer([NotNull] ChannelOptions options)
+        => new TcpServer(AddOrCreate(options.ChannelName, options), _loggerFactory);
 
     public TcpServer Create(string name) => new(GetOrCreate(name), _loggerFactory);
 

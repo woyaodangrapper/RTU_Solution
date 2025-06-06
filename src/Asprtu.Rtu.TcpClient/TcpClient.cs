@@ -172,7 +172,7 @@ public sealed class TcpClient : Channel, ITcpClient
         {
             if (!Listener.Connected)
             {
-                await Listener.ConnectAsync(IPAddress, Port).ConfigureAwait(false);
+                await Listener.ConnectAsync(new IPEndPoint(IPAddress, Port)).ConfigureAwait(false);
             }
             OnSuccess?.Invoke(Listener);
             _tracker.SetState(ConnectionState.Active);

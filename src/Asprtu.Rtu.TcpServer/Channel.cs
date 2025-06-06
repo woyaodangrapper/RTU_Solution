@@ -2,6 +2,7 @@
 using Asprtu.Rtu.TcpServer.Contracts;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -22,7 +23,7 @@ public abstract class Channel : IDisposable
     )
     {
         Logger = loggerFactory.CreateLogger<Channel>();
-        Listener = new TcpListener(options.IPAddress, options.Port);
+        Listener = new TcpListener(new IPEndPoint(options.IPAddress, options.Port));
         Buffer = new CircularBuffer(options.Capacity);
         Listener.Start();
     }

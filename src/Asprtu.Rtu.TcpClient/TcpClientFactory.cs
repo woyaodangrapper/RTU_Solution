@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Asprtu.Rtu.TcpClient;
 
@@ -31,11 +32,14 @@ public class TcpClientFactory : ITcpClientFactory
     private static ChannelOptions GetOrCreate(string name)
         => _instance.GetOrAdd(name, _ => new ChannelOptions(name));
 
+    private static ChannelOptions AddOrCreate(string name, ChannelOptions channel)
+        => _instance.GetOrAdd(name, _ => channel);
+
     public ITcpClient CreateTcpClient()
         => new TcpClient(_channelOptions, _loggerFactory);
 
-    public ITcpClient CreateTcpClient(ChannelOptions options)
-        => new TcpClient(_channelOptions, _loggerFactory);
+    public ITcpClient CreateTcpClient([NotNull] ChannelOptions options)
+        => new TcpClient(AddOrCreate(options.ChannelName, options), _loggerFactory);
 
     public TcpClient Create(string name) => new(GetOrCreate(name), _loggerFactory);
 
