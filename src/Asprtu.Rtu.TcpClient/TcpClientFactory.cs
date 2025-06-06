@@ -18,7 +18,7 @@ public class TcpClientFactory : ITcpClientFactory
     public static TcpClientFactory Instance => instance.Value;
 
     public TcpClientFactory(string name = "default")
-        : this(NullLoggerFactory.Instance, GetOrCreate(name))
+        : this(NullLoggerFactory.Instance, new ChannelOptions(name))
     {
     }
 
