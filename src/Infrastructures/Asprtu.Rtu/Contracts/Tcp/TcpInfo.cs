@@ -81,6 +81,9 @@ public enum ConnectionState
     /// <summary>握手中 Handshaking</summary>
     Handshaking,
 
+    /// <summary>已初始化 Listening</summary>
+    Listening,
+
     /// <summary>活跃连接 Active and usable</summary>
     Active,
 

@@ -27,13 +27,11 @@ public sealed class TcpServer : Channel, ITcpServer
     private readonly ConcurrentDictionary<string, TcpClient> _clients = new();
 
     public TcpServer() : base(new("default"), NullLoggerFactory.Instance)
-    {
-    }
+        => _tracker.SetState(ConnectionState.Listening);
 
     [ActivatorUtilitiesConstructor]
     public TcpServer(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
-    {
-    }
+        => _tracker.SetState(ConnectionState.Listening);
 
     private readonly ConnectionStateTracker _tracker = new();
     private TcpClient? _client;
@@ -174,6 +172,8 @@ public sealed class TcpServer : Channel, ITcpServer
 
     public async Task TryExecuteAsync()
     {
+        _tracker.SetState(ConnectionState.Active);
+
         try
         {
             while (!CancellationToken.IsCancellationRequested)
@@ -193,6 +193,7 @@ public sealed class TcpServer : Channel, ITcpServer
         {
             Listener.Stop();
         }
+        _tracker.SetState(ConnectionState.Closed);
     }
 
     protected override void Dispose(bool disposing)
@@ -204,7 +205,7 @@ public sealed class TcpServer : Channel, ITcpServer
                 client.Dispose();
             }
         }
-        _tracker.SetState(ConnectionState.Closed);
+        _tracker.SetState(ConnectionState.Closing);
         base.Dispose(disposing);
     }
 }

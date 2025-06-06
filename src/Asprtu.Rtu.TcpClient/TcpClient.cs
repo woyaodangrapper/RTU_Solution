@@ -28,13 +28,10 @@ public sealed class TcpClient : Channel, ITcpClient
 
     [ActivatorUtilitiesConstructor]
     public TcpClient(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
-    {
-    }
+        => _tracker.SetState(ConnectionState.Listening);
 
-    public TcpClient(ChannelOptions options, ILoggerFactory loggerFactory)
-        : base(options, loggerFactory)
-    {
-    }
+    public TcpClient(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+        => _tracker.SetState(ConnectionState.Listening);
 
     private readonly ConnectionStateTracker _tracker = new();
 
@@ -165,6 +162,8 @@ public sealed class TcpClient : Channel, ITcpClient
 
     public async Task TryExecuteAsync()
     {
+        _tracker.SetState(ConnectionState.Connecting);
+
         try
         {
             if (!Listener.Connected)
@@ -172,6 +171,7 @@ public sealed class TcpClient : Channel, ITcpClient
                 await Listener.ConnectAsync(IPAddress, Port).ConfigureAwait(false);
             }
             OnSuccess?.Invoke(Listener);
+            _tracker.SetState(ConnectionState.Active);
 
             while (!CancellationToken.IsCancellationRequested)
             {
@@ -189,7 +189,12 @@ public sealed class TcpClient : Channel, ITcpClient
             LogTcpListener(Logger, "SocketException exception in TryExecuteAsync", e);
             OnError?.Invoke(e);
         }
+        _tracker.SetState(ConnectionState.Closed);
     }
 
-    protected override void Dispose(bool disposing) => base.Dispose(disposing);
+    protected override void Dispose(bool disposing)
+    {
+        _tracker.SetState(ConnectionState.Closing);
+        base.Dispose(disposing);
+    }
 }
