@@ -14,7 +14,7 @@ public sealed class ChannelOptions
     {
         ChannelName = channelName;
         IPAddress = IPAddressExtensions.GetLocalIPAddress() ?? throw new InvalidOperationException("無法獲取本機IP，進行TCP服務代理失敗！");
-        Port = IPAddressExtensions.GenerateRandomPort();
+        Port = IPAddressExtensions.GenerateRandomPort(1868);
     }
 
     /// <summary>

@@ -42,7 +42,7 @@ public static class IPAddressExtensions
         return null; // 如果无法找到合适的 IPv4 地址
     }
 
-    public static int GenerateRandomPort()
+    public static int GenerateRandomPort(int? expectation = null)
     {
         const int minPort = 1000;
         const int maxPort = 65535;
@@ -51,7 +51,13 @@ public static class IPAddressExtensions
         Random random = new();
         int port;
         int attempt = 0;
-
+        if (expectation.HasValue)
+        {
+            if (expectation.Value >= minPort && expectation.Value <= maxPort && IsPortAvailable(expectation.Value))
+            {
+                return expectation.Value;
+            }
+        }
         // 随机生成端口号并检查是否已被占用，最多尝试 maxAttempts 次
         do
         {
