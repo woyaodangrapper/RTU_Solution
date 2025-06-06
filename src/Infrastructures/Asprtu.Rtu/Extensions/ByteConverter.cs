@@ -10,7 +10,6 @@ public static class ByteConverter
     public static byte[] GetBytes(object obj)
     {
         ArgumentNullException.ThrowIfNull(obj);
-
         return obj switch
         {
             int i => BitConverter.GetBytes(i),

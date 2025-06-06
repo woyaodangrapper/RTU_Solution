@@ -11,6 +11,9 @@ public class LibraryCapacities<T> : ILibraryCapacities<T>
 
     public T Contracts { get; }
 
+    public LibraryCapacities(T instance)
+        => Contracts = instance ?? throw new ArgumentNullException(nameof(instance));
+
     public LibraryCapacities(IServiceProvider provider) =>
         Contracts = ActivatorUtilities.CreateInstance<T>(provider);
 }

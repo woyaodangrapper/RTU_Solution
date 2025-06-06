@@ -78,6 +78,10 @@ public sealed class TcpClient : Channel, ITcpClient
 
     public async Task<bool> TryWriteAsync(byte[] bytes)
     {
+        var header = new MessageHeader(length => length + bytes.Length);
+
+        header.ToBytes(out byte[] headerBytes);
+        bytes = [.. headerBytes, .. bytes];
         try
         {
             _tracker.AddSent(bytes?.Length ?? 0);

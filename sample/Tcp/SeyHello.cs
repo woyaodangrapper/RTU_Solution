@@ -11,7 +11,7 @@ public class SayHello : AbstractMessage
 
     public override byte[] Serialize()
     {
-        var messageBytes = base.Serialize();
+        var messageBytes = Array.Empty<byte>(); ;
 
         // 名称
         byte[] nameBytes = Encoding.ASCII.GetBytes(Name.PadLeft(20, ' '));
