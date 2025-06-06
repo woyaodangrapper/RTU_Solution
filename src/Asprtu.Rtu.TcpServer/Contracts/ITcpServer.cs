@@ -121,6 +121,11 @@ public interface ITcpServer : IContracts
          where T : AbstractMessage, new();
 
     /// <summary>
+    /// 获取与当前上下文关联的TCP连接信息。
+    /// </summary>
+    public TcpInfo TcpInfo { get; }
+
+    /// <summary>
     /// 错误回调事件，处理异常。
     /// </summary>
     Action<Exception>? OnError { get; set; }

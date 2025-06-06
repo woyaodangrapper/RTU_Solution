@@ -2,12 +2,14 @@ using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpServer.Contracts;
+using Asprtu.Rtu.TcpServer.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -32,6 +34,14 @@ public sealed class TcpServer : Channel, ITcpServer
     public TcpServer(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
     {
     }
+
+    private readonly ConnectionStateTracker _tracker = new();
+    private TcpClient? _client;
+
+    public TcpInfo TcpInfo => _tracker.GetSnapshot(
+      _client?.Client.RemoteEndPoint as IPEndPoint,
+      Listener.LocalEndpoint as IPEndPoint
+    );
 
     public TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
@@ -78,9 +88,10 @@ public sealed class TcpServer : Channel, ITcpServer
 
         header.ToBytes(out byte[] headerBytes);
         bytes = [.. headerBytes, .. bytes];
-
         try
         {
+            _tracker.AddSent(bytes.LongLength);
+
             var stream = _clients.GetStream(client);
             await stream.WriteAsync(bytes).ConfigureAwait(false);
         }
@@ -131,7 +142,6 @@ public sealed class TcpServer : Channel, ITcpServer
         try
         {
             using var stream = client.GetStream();
-
             var buffer = new byte[1024];
 
             int bytesRead = 0;
@@ -146,6 +156,8 @@ public sealed class TcpServer : Channel, ITcpServer
 
                 if (TryAssemble(buffer.AsMemory(0, bytesRead), out var integrity))
                 {
+                    _client = client;
+                    _tracker.AddReceived(integrity.LongLength);
                     OnMessage?.Invoke(Listener, client, integrity);
                 }
             }
@@ -192,6 +204,7 @@ public sealed class TcpServer : Channel, ITcpServer
                 client.Dispose();
             }
         }
+        _tracker.SetState(ConnectionState.Closed);
         base.Dispose(disposing);
     }
 }

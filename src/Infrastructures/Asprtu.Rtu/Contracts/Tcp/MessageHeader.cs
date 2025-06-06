@@ -16,7 +16,7 @@ public struct MessageHeader : IEquatable<MessageHeader>
     public ushort Version; // 协议版本，2字节
 
     [FieldOffset(2)]
-    public ushort Reserved; // 预留字段（可做对齐/扩展） 
+    public ushort Reserved; // 预留字段（可做对齐/扩展）
 
     [FieldOffset(8)]
     public uint TotalLength; // 消息总长度（4字节）
@@ -50,10 +50,9 @@ public struct MessageHeader : IEquatable<MessageHeader>
         CommandId = BitConverter.ToUInt16(bytes[12..14]);      // 偏移量12，读取2字节
         SequenceId = BitConverter.ToUInt16(bytes[14..16]);     // 偏移量14，读取2字节
     }
-    public MessageHeader(int totalLength)
-    {
-        TotalLength = (uint)totalLength;
-    }
+
+    public MessageHeader(int totalLength) => TotalLength = (uint)totalLength;
+
     public MessageHeader(Func<int, int> totalLengthProvider)
     {
         ArgumentNullException.ThrowIfNull(totalLengthProvider);
@@ -112,9 +111,7 @@ public struct MessageHeader : IEquatable<MessageHeader>
     }
 
     public override readonly bool Equals(object? obj) // 修改为 object? 以匹配为 Null 性
-    {
-        return obj is MessageHeader other && Equals(other);
-    }
+        => obj is MessageHeader other && Equals(other);
 
     public readonly bool Equals(MessageHeader other)
     {

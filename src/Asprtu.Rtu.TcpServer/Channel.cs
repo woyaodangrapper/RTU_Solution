@@ -50,8 +50,6 @@ public abstract class Channel : IDisposable
 
     private bool _disposed;
 
-    // Existing fields and methods...
-
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposed)

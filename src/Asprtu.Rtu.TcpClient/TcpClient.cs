@@ -2,10 +2,12 @@ using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpClient.Contracts;
+using Asprtu.Rtu.TcpClient.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.CodeAnalysis;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -33,6 +35,13 @@ public sealed class TcpClient : Channel, ITcpClient
         : base(options, loggerFactory)
     {
     }
+
+    private readonly ConnectionStateTracker _tracker = new();
+
+    public TcpInfo TcpInfo => _tracker.GetSnapshot(
+      Client.Client.RemoteEndPoint as IPEndPoint,
+      Client.Client.LocalEndPoint as IPEndPoint
+    );
 
     public async Task<bool> TrySendAsync(int data) =>
         await TryWriteAsync(BitConverter.GetBytes(data)).ConfigureAwait(false);
@@ -74,6 +83,7 @@ public sealed class TcpClient : Channel, ITcpClient
     {
         try
         {
+            _tracker.AddSent(bytes?.Length ?? 0);
             var stream = Listener.GetStream();
             await stream.WriteAsync(bytes).ConfigureAwait(false);
         }
@@ -137,6 +147,7 @@ public sealed class TcpClient : Channel, ITcpClient
 
                 if (TryAssemble(buffer.AsMemory(0, bytesRead), out var Integrity))
                 {
+                    _tracker.AddReceived(Integrity.LongLength);
                     OnMessage?.Invoke(client, Integrity);
                 }
             }
