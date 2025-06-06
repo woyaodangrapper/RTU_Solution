@@ -1,7 +1,9 @@
 ﻿using Asprtu.Rtu;
 using Asprtu.Rtu.Contracts;
 using Asprtu.Rtu.TcpClient;
+using Asprtu.Rtu.TcpClient.Contracts;
 using Asprtu.Rtu.TcpServer;
+using Asprtu.Rtu.TcpServer.Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,17 +31,21 @@ var builder = WebApplication.CreateSlimBuilder();
 
 {
     builder.Services.AddSingleton<ILibraryCapacities<TcpClient>, LibraryCapacities<TcpClient>>();
+    builder.Services.AddSingleton<ILibraryCapacities<ITcpClient>>(sp => sp.GetRequiredService<ILibraryCapacities<TcpClient>>());
     builder.Services.AddSingleton<ILibraryCapacities>(sp => sp.GetRequiredService<ILibraryCapacities<TcpClient>>());
 
     builder.Services.AddSingleton<ILibraryCapacities<TcpServer>, LibraryCapacities<TcpServer>>();
+    builder.Services.AddSingleton<ILibraryCapacities<ITcpServer>>(sp => sp.GetRequiredService<ILibraryCapacities<TcpServer>>());
     builder.Services.AddSingleton<ILibraryCapacities>(sp => sp.GetRequiredService<ILibraryCapacities<TcpServer>>());
 }
 {
     builder.Services.AddSingleton<ILibraryFactory<TcpClient>, TcpClientFactory>();
     builder.Services.AddSingleton<ILibraryCapacitiesFactory<TcpClient>, LibraryCapacitiesFactory<TcpClient>>();
+    builder.Services.AddSingleton<ILibraryCapacitiesFactory<ITcpClient>>(sp => sp.GetRequiredService<LibraryCapacitiesFactory<TcpClient>>());
 
     builder.Services.AddSingleton<ILibraryFactory<TcpServer>, TcpServerFactory>();
     builder.Services.AddSingleton<ILibraryCapacitiesFactory<TcpServer>, LibraryCapacitiesFactory<TcpServer>>();
+    builder.Services.AddSingleton<ILibraryCapacitiesFactory<ITcpServer>>(sp => sp.GetRequiredService<LibraryCapacitiesFactory<TcpServer>>());
 }
 WebApplication app = builder.Build();
 using IServiceScope scope = app.Services.CreateScope();
@@ -47,6 +53,7 @@ using IServiceScope scope = app.Services.CreateScope();
 {
     IEnumerable<ILibraryCapacities> definitions = scope.ServiceProvider.GetServices<ILibraryCapacities>();
     var TcpClients = scope.ServiceProvider.GetServices<ILibraryCapacities<TcpClient>>();
+    var ITcpClients = scope.ServiceProvider.GetServices<ILibraryCapacities<ITcpClient>>();
 }
 
 {

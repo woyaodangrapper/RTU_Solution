@@ -6,7 +6,7 @@ public interface ILibraryCapacities
     IContracts Contracts { get; }
 }
 
-public interface ILibraryCapacities<T> : ILibraryCapacities
+public interface ILibraryCapacities<out T> : ILibraryCapacities
     where T : IContracts
 {
     new T Contracts { get; }

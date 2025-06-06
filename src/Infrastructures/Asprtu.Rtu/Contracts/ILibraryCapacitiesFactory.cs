@@ -1,6 +1,6 @@
 ﻿namespace Asprtu.Rtu.Contracts;
 
-public interface ILibraryCapacitiesFactory<T>
+public interface ILibraryCapacitiesFactory<out T>
     where T : class, IContracts
 {
     IReadOnlyCollection<T> All { get; }
