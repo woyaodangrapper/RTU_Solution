@@ -2,7 +2,7 @@
 
 public interface ILibraryFactory<T> where T : class, IContracts
 {
-    T Create(string name);
+    T Create(params object[] args);
 
     bool Remove(string name);
 }

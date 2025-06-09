@@ -1,5 +1,6 @@
 ﻿using Asprtu.Rtu;
 using Asprtu.Rtu.Contracts;
+using Asprtu.Rtu.TcpClient;
 using Asprtu.Rtu.TcpServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,8 @@ var builder = WebApplication.CreateSlimBuilder();
 //         typeof(ILibraryCapacities<TcpServer>),
 //         typeof(LibraryCapacities<TcpServer>),
 //         ServiceLifetime.Singleton));
-//builder.AddOptions();
+builder.AddLibraryOptions();
+
 {
     builder.Services.AddSingleton<ILibraryCapacities<TcpServer>, LibraryCapacities<TcpServer>>();
 
@@ -53,15 +55,15 @@ var builder = WebApplication.CreateSlimBuilder();
 }
 
 //{
-//    builder.Services.AddSingleton<ILibraryFactory<TcpClient>, TcpClientFactory>();
+builder.Services.AddSingleton<ILibraryFactory<TcpClient>, TcpClientFactory>();
 //    builder.Services.AddSingleton<ILibraryCapacitiesFactory<TcpClient>, LibraryCapacitiesFactory<TcpClient>>();
 
 //    builder.Services.AddSingleton<ILibraryCapacitiesFactory<ITcpClient>>(sp => sp.GetRequiredService<ILibraryCapacitiesFactory<TcpClient>>());
 
-//    builder.Services.AddSingleton<ILibraryFactory<TcpServer>, TcpServerFactory>();
-//    builder.Services.AddSingleton<ILibraryCapacitiesFactory<TcpServer>, LibraryCapacitiesFactory<TcpServer>>();
+//builder.Services.AddSingleton<ILibraryFactory<TcpServer>, TcpServerFactory>();
+//builder.Services.AddSingleton<ILibraryCapacitiesFactory<TcpServer>, LibraryCapacitiesFactory<TcpServer>>();
 
-//    builder.Services.AddSingleton<ILibraryCapacitiesFactory<ITcpServer>>(sp => sp.GetRequiredService<ILibraryCapacitiesFactory<TcpServer>>());
+//builder.Services.AddSingleton<ILibraryCapacitiesFactory<ITcpServer>>(sp => sp.GetRequiredService<ILibraryCapacitiesFactory<TcpServer>>());
 //}
 WebApplication app = builder.Build();
 using IServiceScope scope = app.Services.CreateScope();

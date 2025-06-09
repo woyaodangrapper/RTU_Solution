@@ -3,7 +3,6 @@ using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpClient.Contracts;
 using Asprtu.Rtu.TcpClient.Extensions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.CodeAnalysis;
@@ -26,11 +25,10 @@ public sealed class TcpClient : Channel, ITcpClient
     {
     }
 
-    [ActivatorUtilitiesConstructor]
     public TcpClient(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
         => _tracker.SetState(ConnectionState.Listening);
 
-    [ActivatorUtilitiesConstructor]
+    //[ActivatorUtilitiesConstructor]
     public TcpClient(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
         => _tracker.SetState(ConnectionState.Listening);
 

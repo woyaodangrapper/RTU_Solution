@@ -3,7 +3,6 @@ using Asprtu.Rtu.Contracts.Tcp;
 using Asprtu.Rtu.Extensions.Tcp;
 using Asprtu.Rtu.TcpServer.Contracts;
 using Asprtu.Rtu.TcpServer.Extensions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
@@ -29,11 +28,10 @@ public sealed class TcpServer : Channel, ITcpServer
     public TcpServer() : base(new("default"), NullLoggerFactory.Instance)
         => _tracker.SetState(ConnectionState.Listening);
 
-    [ActivatorUtilitiesConstructor]
     public TcpServer(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
         => _tracker.SetState(ConnectionState.Listening);
 
-    [ActivatorUtilitiesConstructor]
+    //[ActivatorUtilitiesConstructor]
     public TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
         : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
 

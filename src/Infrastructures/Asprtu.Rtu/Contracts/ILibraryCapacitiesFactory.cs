@@ -5,7 +5,7 @@ public interface ILibraryCapacitiesFactory<out T>
 {
     IReadOnlyCollection<T> All { get; }
 
-    T Add(string name);
+    T Add(string name, params object[] args);
 
     bool Remove(string name);
 }

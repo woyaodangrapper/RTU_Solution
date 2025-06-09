@@ -1,15 +1,16 @@
 ﻿using Microsoft.Extensions.Hosting;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
-internal static class LibraryOptionsExtensions
+public static class LibraryOptionExtensions
 {
-    public static void AddRtuOptions(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder AddLibraryOptions([NotNull] this IHostApplicationBuilder builder)
     {
-        builder.Services.AddSingleton(sp =>
-            new Asprtu.Rtu.TcpServer.Contracts.ChannelOptions("server", "0.0.0.0", 502));
+        _ = builder.Services
+             .AddSingleton(sp => new Asprtu.Rtu.TcpServer.Contracts.ChannelOptions("server", "0.0.0.0", 1868))
+             .AddSingleton(sp => new Asprtu.Rtu.TcpClient.Contracts.ChannelOptions("client", "0.0.0.0", 1868));
 
-        builder.Services.AddSingleton(sp =>
-            new Asprtu.Rtu.TcpClient.Contracts.ChannelOptions("client", "0.0.0.0", 502));
+        return builder;
     }
 }

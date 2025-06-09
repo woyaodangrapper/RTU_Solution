@@ -30,6 +30,14 @@ public sealed class ChannelOptions
         Port = port;
     }
 
+    public ChannelOptions(string channelName, IPAddress ip, int port, int capacity)
+    {
+        ChannelName = channelName;
+        IPAddress = ip;
+        Port = port;
+        Capacity = capacity;
+    }
+
     /// <summary>
     /// 获取通道唯一名称。
     /// </summary>
@@ -49,4 +57,32 @@ public sealed class ChannelOptions
     /// 绑定的 IP 地址。
     /// </summary>
     public IPAddress IPAddress { get; }
+}
+
+public class CreateBuilder(string channelName)
+{
+    private string _channelName = channelName;
+    private IPAddress _ipAddress = new([0, 0, 0, 0]);
+    private int _port = IPAddressExtensions.GenerateRandomPort(1868);
+    private int _capacity = 1024;
+
+    public CreateBuilder SetAddress(IPAddress ip)
+    {
+        _ipAddress = ip;
+        return this;
+    }
+
+    public CreateBuilder SetPort(int port)
+    {
+        _port = port;
+        return this;
+    }
+
+    public CreateBuilder SetCapacity(int capacity)
+    {
+        _capacity = capacity;
+        return this;
+    }
+
+    public ChannelOptions Build() => new(_channelName, _ipAddress, _port, _capacity);
 }

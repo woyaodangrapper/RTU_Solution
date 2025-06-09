@@ -11,4 +11,9 @@ public interface ITcpClientFactory : ILibraryFactory<TcpClient>
     /// 创建一个 TCP 客户端实例，用于处理客户端请求。
     /// </summary>
     ITcpClient CreateTcpClient(ChannelOptions options);
+
+    /// <summary>
+    /// 使用指定名称创建一个 TCP 客户端构建器。
+    /// </summary>
+    CreateBuilder CreateBuilder(string name);
 }
