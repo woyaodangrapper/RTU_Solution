@@ -30,6 +30,7 @@ public sealed class TcpClient : Channel, ITcpClient
     public TcpClient(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
         => _tracker.SetState(ConnectionState.Listening);
 
+    [ActivatorUtilitiesConstructor]
     public TcpClient(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
         => _tracker.SetState(ConnectionState.Listening);
 

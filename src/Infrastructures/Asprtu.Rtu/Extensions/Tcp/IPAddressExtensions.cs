@@ -42,6 +42,16 @@ public static class IPAddressExtensions
         return null; // 如果无法找到合适的 IPv4 地址
     }
 
+    /// <summary>
+    /// 在有效范围内生成一个随机端口号，并检查其可用性。
+    /// </summary>
+    /// <remarks>If an expected port number is provided and it is within the valid range (1000 to 65535) and
+    /// available, the method will return that port. Otherwise, it attempts to generate a random port number that is
+    /// available. The method will try up to 100 times to find an available port before throwing an exception.</remarks>
+    /// <param name="expectation">An optional expected port number. If specified, the method will return this port if it is within the valid range
+    /// and available. If the port is unavailable or out of range, a random port will be generated instead.</param>
+    /// <returns>A randomly generated port number within the range of 1000 to 65535 that is available for use.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if no available port could be found after 100 attempts.</exception>
     public static int GenerateRandomPort(int? expectation = null)
     {
         const int minPort = 1000;

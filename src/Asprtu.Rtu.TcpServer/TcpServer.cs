@@ -33,6 +33,10 @@ public sealed class TcpServer : Channel, ITcpServer
     public TcpServer(ILoggerFactory loggerFactory) : base(new("default"), loggerFactory)
         => _tracker.SetState(ConnectionState.Listening);
 
+    [ActivatorUtilitiesConstructor]
+    public TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
+        : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
+
     private readonly ConnectionStateTracker _tracker = new();
     private TcpClient? _client;
 
@@ -40,9 +44,6 @@ public sealed class TcpServer : Channel, ITcpServer
       _client?.Client.RemoteEndPoint as IPEndPoint,
       Listener.LocalEndpoint as IPEndPoint
     );
-
-    public TcpServer(ChannelOptions options, ILoggerFactory loggerFactory)
-        : base(options, loggerFactory) => OnSuccess?.Invoke(Listener);
 
     public async Task<bool> TrySendAsync(int data, TcpClient? client = null) =>
         await TryWriteAsync(ByteConverter.GetBytes(data), client).ConfigureAwait(false);
