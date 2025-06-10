@@ -99,7 +99,45 @@ using IServiceScope scope = app.Services.CreateScope();
     //    await _tcpClient.TrySendAsync(1);
     //}
 }
-Console.ReadLine();
+
+{
+    var loggerFactory = scope.ServiceProvider.GetService<ILoggerFactory>();
+
+    var tcpServerFactory = new TcpServerFactory(loggerFactory);
+    var dataServer = tcpServerFactory.CreateTcpServer(new("default", "127.0.0.1", 6688));
+
+    _ = Task.Factory.StartNew(async () => await dataServer.TryExecuteAsync());
+
+    var tcpClientFactory = new TcpClientFactory(loggerFactory);
+    var dataClient = tcpClientFactory.CreateTcpClient(new("default", "127.0.0.1", 6688));
+    Thread.Sleep(1000); // Ensure server is ready before client tries to connect
+    _ = dataClient.TryExecuteAsync();
+
+    List<Task<bool>> tasks = new List<Task<bool>>();
+    for (int i = 0; i < 100; i++)
+    {
+        tasks.Add(dataClient.TrySendAsync(i));
+    }
+    try
+    {
+        await Task.WhenAll(tasks);
+    }
+    catch (Exception)
+    {
+        throw;
+    }
+
+    var bytes = new List<byte[]>();
+    dataServer.OnMessage += (server, client, data) =>
+    {
+        bytes.Add(data);
+        Console.WriteLine($"Client connected: {data.Length}");
+    };
+    Console.ReadLine();
+
+    await dataClient.TrySendAsync(1);
+    Console.ReadLine();
+}
 
 //TcpClientFactory factory = new(console, new("default", "127.0.0.1", 6688));
 

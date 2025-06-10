@@ -1,7 +1,6 @@
 ﻿using Asprtu.Rtu.Contracts;
 using Asprtu.Rtu.TcpClient.Contracts;
 using Microsoft.Extensions.Logging;
-using RTU.TcpServer.Contracts;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;

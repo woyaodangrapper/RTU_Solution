@@ -37,8 +37,8 @@ public abstract class Channel : IDisposable
         return 12 * (long)Math.Ceiling(length / 12.0);
     }
 
-    protected long SafeIncrementMessageOffset(long offset, long increment) =>
-       (offset + increment) % (Buffer.Capacity * 2);
+    //protected long SafeIncrementMessageOffset(long offset, long increment) =>
+    //   (offset + increment) % (Buffer.Capacity * 2);
 
     protected virtual bool IsConnected([NotNull] Socket socket)
      => !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);

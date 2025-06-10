@@ -6,7 +6,6 @@ using Asprtu.Rtu.TcpServer.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
@@ -107,6 +106,58 @@ public sealed class TcpServer : Channel, ITcpServer
         return true;
     }
 
+    private bool TryAssemble(out byte[] integrity)
+    {
+        integrity = null!;
+        int headerSize = Marshal.SizeOf<MessageHeader>();
+
+        // 1. 缓冲区数据不足以读出头部
+        if (Buffer.Count < headerSize)
+            return false;
+
+        // 2. 取头部字节但不移除
+        byte[] headerBytes = Buffer.Peek(headerSize);
+        var header = headerBytes.TryReadHeader();
+        if (!header.HasValue)
+            return false;
+
+        long totalLength = header.Value.TotalLength;
+
+        // 3. 缓冲区数据不足以读出整条消息
+        if (Buffer.Count < totalLength)
+            return false;
+
+        // 4. 读出完整消息（含头、体、padding），并从缓冲区移除
+        integrity = Buffer.Read((int)totalLength);
+        return true;
+    }
+
+    private async Task ReadLoopAsync(TcpClient client, CancellationToken stoppingToken)
+    {
+        using var stream = client.GetStream();
+        var recvBuffer = new byte[1024];
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            // 1. 异步读取网络流
+            int bytesRead = await stream
+                .ReadAsync(recvBuffer, stoppingToken)
+                .ConfigureAwait(false);
+            if (bytesRead == 0)
+                break; // 客户端断开
+
+            // 2. 写入环形缓冲区
+            Buffer.Write(recvBuffer.AsSpan(0, bytesRead));
+
+            // 3. 循环拆包，直到没有完整消息为止
+            while (TryAssemble(out var message))
+            {
+                // 触发事件
+                OnMessage?.Invoke(Server, client, message);
+            }
+        }
+    }
+
     private bool TryAssemble(ReadOnlyMemory<byte> data, out byte[] Integrity)
     {
         Integrity = default!;
@@ -148,9 +199,6 @@ public sealed class TcpServer : Channel, ITcpServer
                 bytesRead = stream.Read(buffer);
                 if (bytesRead == 0)
                     break; // Client disconnected
-
-                var stopwatch = Stopwatch.StartNew();
-
                 if (TryAssemble(buffer.AsMemory(0, bytesRead), out var integrity))
                 {
                     _client = client;
@@ -180,7 +228,7 @@ public sealed class TcpServer : Channel, ITcpServer
                 var cancellationToken = CancellationToken.Token;
                 var client = await Listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
                 _clients.AddOrUpdate(client.Client.RemoteEndPoint!.ToString()!, client, (key, oldValue) => client);
-                _ = Task.Run(() => ReadLoop(client, cancellationToken));
+                _ = Task.Run(async () => await ReadLoopAsync(client, cancellationToken).ConfigureAwait(false));
             }
         }
         catch (OperationCanceledException e)

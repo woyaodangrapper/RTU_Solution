@@ -1,128 +1,162 @@
-﻿namespace RTU.TcpServer.Contracts;
+﻿using System.Diagnostics;
+
+namespace Asprtu.Rtu.TcpClient.Contracts;
 
 public sealed class CircularBuffer
 {
-    private byte[] buffer;
-    private int readIndex;
-    private int writeIndex;
-    private int count;
-
-    internal CircularBuffer(int capacity) => buffer = new byte[capacity];
-
-    internal int Capacity => buffer.Length;
-
-    internal int Count => count;
-
-    internal bool IsEmpty => count == 0;
-
-    internal bool IsFull => count == Capacity;
+    private readonly byte[] buffer;
+    private readonly int mask;                // = capacity - 1
+    private volatile int headIndex;       // 读指针
+    private volatile int tailIndex;       // 写指针
 
     /// <summary>
-    /// 写入数据到环形缓存，支持自动扩容和覆盖旧数据
+    /// capacity 必须是 2 的幂次方，比如 1024、2048、4096……
     /// </summary>
-    internal void Write(ReadOnlySpan<byte> source)
+    public CircularBuffer(int capacity)
     {
-        foreach (var b in source)
+        if (capacity <= 0 || (capacity & (capacity - 1)) != 0)
+            throw new ArgumentException("capacity must be a power of two", nameof(capacity));
+
+        buffer = new byte[capacity];
+        mask = capacity - 1;
+    }
+
+    /// <summary>
+    /// 只读取数据而不移动 headIndex（读指针）
+    /// </summary>
+    /// <param name="length"></param>
+    /// <returns></returns>
+    public byte[] Peek(int length)
+    {
+        if (length <= 0) return [];
+
+        int available = Count;
+        if (length > available) length = available;
+
+        var result = new byte[length];
+        int head = headIndex;
+
+        for (int i = 0; i < length; i++)
         {
-            if (IsFull)
-            {
-                ExpandBuffer();
-            }
-
-            buffer[writeIndex] = b;
-            writeIndex = (writeIndex + 1) % Capacity;
-
-            if (count == Capacity)
-            {
-                // 缓冲区满了，覆盖：读指针也跟着移动
-                readIndex = (readIndex + 1) % Capacity;
-            }
-            else
-            {
-                count++;
-            }
+            int idx = (head + i) & mask;
+            result[i] = buffer[idx];
         }
-    }
-
-    /// <summary>
-    /// 从环形缓存中读取指定数量的数据
-    /// </summary>
-    internal byte[] Read(int length)
-    {
-        if (length <= 0)
-            return Array.Empty<byte>();
-
-        if (length > count)
-            length = count; // 只读现有的数据
-
-        var result = new byte[length];
-
-        int firstPart = Math.Min(Capacity - readIndex, length);
-        Array.Copy(buffer, readIndex, result, 0, firstPart);
-
-        int secondPart = length - firstPart;
-        if (secondPart > 0)
-            Array.Copy(buffer, 0, result, firstPart, secondPart);
-
-        readIndex = (readIndex + length) % Capacity;
-        count -= length;
 
         return result;
     }
 
     /// <summary>
-    /// 只读取但不移动读指针
+    /// 可写入的剩余空间
     /// </summary>
-    internal byte[] Peek(int length)
+    public int FreeCount =>
+            // tailIndex - headIndex ≤ capacity
+            buffer.Length - (tailIndex - headIndex);
+
+    /// <summary>
+    /// 可读取的数据长度
+    /// </summary>
+    public int Count => tailIndex - headIndex;
+
+    public bool IsEmpty => Count == 0;
+    public bool IsFull => Count == buffer.Length;
+
+    /// <summary>
+    /// 写入单个字节。返回 true 表示写入成功，false 表示缓冲区已满。
+    /// </summary>
+    public bool TryWrite(byte value)
     {
-        if (length <= 0)
-            return Array.Empty<byte>();
+        if (Count >= buffer.Length)  // 满时拒写
+            return false;
 
-        if (length > count)
-            length = count;
+        int idx = tailIndex & mask;
+        buffer[idx] = value;
 
-        var result = new byte[length];
-
-        int firstPart = Math.Min(Capacity - readIndex, length);
-        Array.Copy(buffer, readIndex, result, 0, firstPart);
-
-        int secondPart = length - firstPart;
-        if (secondPart > 0)
-            Array.Copy(buffer, 0, result, firstPart, secondPart);
-
-        return result;
+        // 确保 data 写入对消费者可见
+        Volatile.Write(ref tailIndex, tailIndex + 1);
+        return true;
     }
 
     /// <summary>
-    /// 清空缓存
+    /// 读取单个字节。返回 true 和 out value 表示读取成功，false 表示缓冲区空。
     /// </summary>
-    internal void Clear()
+    public bool TryRead(out byte value)
     {
-        readIndex = 0;
-        writeIndex = 0;
-        count = 0;
-        Array.Clear(buffer, 0, buffer.Length);
+        if (Count <= 0)  // 空时拒读
+        {
+            value = default;
+            return false;
+        }
+
+        int idx = headIndex & mask;
+        value = buffer[idx];
+
+        // 确保 value 读取对生产者可见
+        Volatile.Write(ref headIndex, headIndex + 1);
+        return true;
     }
 
     /// <summary>
-    /// 扩容缓存为原容量的两倍
+    /// 写入多个字节，返回实际写入的长度。
     /// </summary>
-    private void ExpandBuffer()
+    public int Write(ReadOnlySpan<byte> src)
     {
-        int newCapacity = Capacity * 2;
-        var newBuffer = new byte[newCapacity];
+        int written = 0;
+        foreach (var b in src)
+        {
+            if (!TryWrite(b))
+                break;
+            written++;
+        }
+        return written;
+    }
 
-        // 将数据从旧缓冲区复制到新缓冲区
-        int firstPart = Math.Min(Capacity - readIndex, count);
-        Array.Copy(buffer, readIndex, newBuffer, 0, firstPart);
+    /// <summary>
+    /// 读取多个字节，返回实际读取的数组（可能小于请求长度）。
+    /// </summary>
+    public byte[] Read(int length)
+    {
+        if (length <= 0) return Array.Empty<byte>();
 
-        int secondPart = count - firstPart;
-        if (secondPart > 0)
-            Array.Copy(buffer, 0, newBuffer, firstPart, secondPart);
+        int available = Count;
+        if (length > available) length = available;
 
-        // 更新指针
-        buffer = newBuffer;
-        readIndex = 0;
-        writeIndex = count;
+        var dst = new byte[length];
+        for (int i = 0; i < length; i++)
+        {
+            TryRead(out dst[i]);
+        }
+        return dst;
+    }
+
+    /// <summary>
+    /// 尝试将 src 完整写入环形缓冲区，
+    /// 如果容量不足，则阻塞等待或抛出超时异常。
+    /// </summary>
+    public void WriteBlocking(ReadOnlySpan<byte> src, CancellationToken token, TimeSpan? timeout = null)
+    {
+        int offset = 0;
+        var sw = timeout.HasValue ? Stopwatch.StartNew() : null;
+
+        while (offset < src.Length)
+        {
+            // 如果超时，抛异常
+            if (timeout.HasValue && sw!.Elapsed > timeout.Value)
+                throw new TimeoutException("CircularBuffer 写入超时，缓冲区已满。");
+
+            int free = FreeCount;
+            if (free == 0)
+            {
+                Thread.Yield();
+                token.ThrowIfCancellationRequested();
+                continue;
+            }
+
+            // 本次能写入的长度
+            int canWrite = Math.Min(free, src.Length - offset);
+            for (int i = 0; i < canWrite; i++)
+                TryWrite(src[offset + i]);
+
+            offset += canWrite;
+        }
     }
 }
