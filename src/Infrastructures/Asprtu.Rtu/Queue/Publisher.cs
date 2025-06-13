@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-
-namespace Asprtu.Rtu.Queue;
+﻿namespace Asprtu.Rtu.Queue;
 
 public class Publisher<T> : QueueCache<T>, IPublisher<T>
 {
@@ -32,8 +30,5 @@ public class Publisher<T> : QueueCache<T>, IPublisher<T>
         }
     }
 
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-    }
+    protected override void Dispose(bool disposing) => base.Dispose(disposing);
 }
