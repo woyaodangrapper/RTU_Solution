@@ -45,6 +45,13 @@ public sealed class ChannelOptions
     /// 默认值 2400 bps（DLT645-2007 标准波特率）。
     /// </summary>
     public int BaudRate { get; init; } = 2400;
+
+
+    /// <summary>
+    /// 获取或设置帧的最大长度（用于缓冲区分配）。
+    /// 默认值 256 字节，大于协议标准限制的 216 字节 (L=200)。
+    /// </summary>
+    public int MaxLength { get; init; } = 256;
 }
 
 /// <summary>
@@ -57,6 +64,7 @@ public sealed class CreateBuilder
     private int _frameTimeout = 500; // 单帧超时，默认 500ms
     private int _retryCount = 1;     // 默认重试 1 次
     private int _baudRate = 2400;    // 默认波特率
+    private int _maxLength = 2400;    // 默认波特率
 
     /// <summary>
     /// 初始化 <see cref="CreateBuilder"/> 类的新实例。
@@ -99,6 +107,17 @@ public sealed class CreateBuilder
         return this;
     }
 
+    /// <summary>
+    /// 添加串口通道（支持字符串格式的地址）。
+    /// </summary>
+    /// <param name="comPort">串口名称（如 COM1）</param>
+    /// <returns>当前构建器实例</returns>
+    public CreateBuilder WithChannel(string comPort)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
+        _channels.Add(new ComChannel(comPort, null));
+        return this;
+    }
 
     /// <summary>
     /// 设置单帧超时时间。
@@ -133,6 +152,18 @@ public sealed class CreateBuilder
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(baudRate, 1200, nameof(baudRate));
         _baudRate = baudRate;
+        return this;
+    }
+
+    /// <summary>
+    /// 使用指定的帧的最大长度 。
+    /// </summary>
+    /// <param name="maxFrameLength">最大长度,协议标准 216 字节 (L=200)/param>
+    /// <returns>当前构建器实例。</returns>
+    public CreateBuilder WithMaxLength(int maxFrameLength)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxFrameLength, 1, nameof(maxFrameLength));
+        _maxLength = maxFrameLength;
         return this;
     }
 

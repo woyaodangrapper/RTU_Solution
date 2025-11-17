@@ -12,9 +12,14 @@ namespace Asprtu.Rtu.DLT645;
 /// </summary>
 public class Channel : IDisposable
 {
-    private readonly List<SerialPort> _ports = [];
     private readonly CancellationTokenSource _cancellation = new();
     private readonly ILogger<Channel> _logger;
+
+
+
+
+    protected CircularBuffer Buffer { get; }
+
     private bool _disposed;
 
     public ChannelOptions Options { get; }
@@ -23,6 +28,14 @@ public class Channel : IDisposable
     /// 通道名称（唯一标识）
     /// </summary>
     public string ChannelName => Options.ChannelName;
+
+    /// <summary>
+    /// 获取可用串行端口的集合。
+    /// </summary>
+    /// <remarks>该集合是只读的，反映了当前检测到的串行端口集
+    /// 如果在应用程序运行时添加或删除端口，则内容可能会更改。</remarks>
+    public Collection<SerialPort> Ports { get; } = [];
+
 
     /// <summary>
     /// 当前通道下所有串口（只读）
@@ -53,11 +66,11 @@ public class Channel : IDisposable
             new EventId(104, nameof(LogChannelInitialized)),
             "Channel '{ChannelName}' initialized with {Count} serial ports.");
 
-    public Channel([NotNull] ChannelOptions options, ILoggerFactory loggerFactory)
+    protected Channel([NotNull] ChannelOptions options, ILoggerFactory loggerFactory)
     {
         Options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = loggerFactory.CreateLogger<Channel>();
-
+        Buffer = new CircularBuffer(options.MaxLength);
         // 初始化并打开所有串口
         foreach (var com in options.Channels.Distinct())
         {
@@ -72,7 +85,7 @@ public class Channel : IDisposable
                 WriteTimeout = options.Timeout
             };
 
-            _ports.Add(port);
+            Ports.Add(port);
 
             // 立即打开串口
             try
@@ -106,7 +119,7 @@ public class Channel : IDisposable
             }
         }
 
-        LogChannelInitialized(_logger, ChannelName, _ports.Count, null);
+        LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
     }
 
     /// <summary>
@@ -138,7 +151,11 @@ public class Channel : IDisposable
 
         return true;
     }
-
+    public bool IsPortsConnected()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        return Ports.All(IsConnected);
+    }
     /// <summary>
     /// 写入数据到指定串口。
     /// </summary>
@@ -146,11 +163,17 @@ public class Channel : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var port = _ports.Find(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
+        var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
                    ?? throw new InvalidOperationException($"Port {comPort} not found.");
 
         if (!port.IsOpen)
             throw new InvalidOperationException($"Port {comPort} is not open.");
+
+        // 清除旧的或残留的输入数据
+        port.DiscardInBuffer();
+
+        // 清除输出缓冲区（可选，但推荐）
+        port.DiscardOutBuffer();
 
         port.Write(buffer, offset, count);
         return count;
@@ -163,12 +186,11 @@ public class Channel : IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var port = _ports.Find(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
+        var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
                    ?? throw new InvalidOperationException($"Port {comPort} not found.");
 
         if (!port.IsOpen)
             throw new InvalidOperationException($"Port {comPort} is not open.");
-
         return port.Read(buffer, offset, count);
     }
 
@@ -179,7 +201,7 @@ public class Channel : IDisposable
             if (disposing)
             {
                 // 关闭并释放所有串口
-                foreach (var port in _ports)
+                foreach (var port in Ports)
                 {
                     try
                     {

@@ -1,8 +1,9 @@
-﻿namespace Asprtu.Rtu.DLT645.Contracts;
+﻿using System.Collections.ObjectModel;
 
-using System.Collections.ObjectModel;
+namespace Asprtu.Rtu.DLT645.Contracts;
 
-public class ComChannel(string port, byte[] addresses)
+
+public class ComChannel(string port, byte[]? addresses)
 {
     public string Port { get; set; } = port;
     public ReadOnlyCollection<byte> Addresses { get; } = new ReadOnlyCollection<byte>(addresses ?? []);

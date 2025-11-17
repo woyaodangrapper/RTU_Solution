@@ -91,7 +91,9 @@ public abstract class AbstractMessage
     /// 计算消息总长度
     /// </summary>
     /// <returns>消息总长度（包括帧头、数据域、校验和结束符）</returns>
-    protected virtual int CalculateMessageLength() =>
+    protected virtual int CalculateMessageLength()
+    {
         // DLT645 消息长度 = 前导码(2) + 起始码(1) + 地址域(6) + 起始符(1) + 控制码(1) + 数据长度(1) + 数据域(N) + 校验码(1) + 结束符(1)
-        14 + DataLength;
+        return 14 + DataLength;
+    }
 }

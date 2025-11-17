@@ -12,7 +12,7 @@ public interface IDlt645Client : IContracts
     /// 获取总线设备地址。
     /// </summary>
     /// <returns>操作结果。</returns>
-    IEnumerable<byte[]> TryReadAddressAsync();
+    Task<IAsyncEnumerable<MessageHeader>> TryReadAddressAsync(CancellationToken cancellationToken);
 
     /// <summary>
     /// 尝试异步写入字节数组到从站。

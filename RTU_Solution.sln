@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.9.34622.214
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11206.111 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -26,6 +26,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asprtu.Rtu", "src\Infrastructures\Asprtu.Rtu\Asprtu.Rtu.csproj", "{6D5F853D-4076-23AF-8D09-A112A16BE13D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp", "tests\Tcp\Tcp.csproj", "{1112E296-F5B4-475E-B42C-ADDC33860CE1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dlt645", "sample\Dlt645\Dlt645.csproj", "{076CBBC3-770D-7633-9944-666687589102}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Asprtu.Rtu.DLT645", "src\Asprtu.Rtu.DLT645\Asprtu.Rtu.DLT645.csproj", "{6D0A9B55-74C2-864B-59B7-534F3EDF8435}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +57,14 @@ Global
 		{1112E296-F5B4-475E-B42C-ADDC33860CE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1112E296-F5B4-475E-B42C-ADDC33860CE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1112E296-F5B4-475E-B42C-ADDC33860CE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{076CBBC3-770D-7633-9944-666687589102}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{076CBBC3-770D-7633-9944-666687589102}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{076CBBC3-770D-7633-9944-666687589102}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{076CBBC3-770D-7633-9944-666687589102}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D0A9B55-74C2-864B-59B7-534F3EDF8435}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D0A9B55-74C2-864B-59B7-534F3EDF8435}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D0A9B55-74C2-864B-59B7-534F3EDF8435}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D0A9B55-74C2-864B-59B7-534F3EDF8435}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,10 +76,12 @@ Global
 		{564896AE-1ED6-93CD-D848-ED982389378B} = {22F32445-AD68-45C7-A76D-8CCBDB7BA00E}
 		{6D5F853D-4076-23AF-8D09-A112A16BE13D} = {7F420355-C5BD-56E5-4580-BDAA5D54161B}
 		{1112E296-F5B4-475E-B42C-ADDC33860CE1} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{076CBBC3-770D-7633-9944-666687589102} = {22F32445-AD68-45C7-A76D-8CCBDB7BA00E}
+		{6D0A9B55-74C2-864B-59B7-534F3EDF8435} = {C95AD8C9-2D93-493A-BDE4-F1E2A9CCA8FF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {199B1B96-4F56-4828-9531-813BA02DB282}
-		RESX_Rules = {"EnabledRules":[]}
 		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_Rules = {"EnabledRules":[]}
+		SolutionGuid = {199B1B96-4F56-4828-9531-813BA02DB282}
 	EndGlobalSection
 EndGlobal
