@@ -1,5 +1,6 @@
 using Asprtu.Rtu.DLT645.Extensions;
 using System.Collections.ObjectModel;
+using System.IO.Ports;
 
 namespace Asprtu.Rtu.DLT645.Contracts;
 
@@ -32,7 +33,7 @@ public sealed class ChannelOptions
     /// 获取或设置单帧超时时间（毫秒）。
     /// 默认值 500 毫秒。
     /// </summary>
-    public int Timeout { get; init; } = 500;
+    public TimeSpan Timeout { get; init; } = TimeSpan.FromMilliseconds(500);
 
     /// <summary>
     /// 获取或设置重试次数。
@@ -40,18 +41,47 @@ public sealed class ChannelOptions
     /// </summary>
     public int RetryCount { get; init; } = 1;
 
-    /// <summary>
-    /// 获取或设置波特率。
-    /// 默认值 2400 bps（DLT645-2007 标准波特率）。
-    /// </summary>
-    public int BaudRate { get; init; } = 2400;
-
 
     /// <summary>
     /// 获取或设置帧的最大长度（用于缓冲区分配）。
     /// 默认值 256 字节，大于协议标准限制的 216 字节 (L=200)。
     /// </summary>
     public int MaxLength { get; init; } = 256;
+
+    /// <summary>
+    /// 获取或设置用于设备连接的通信端口设置。
+    /// </summary>
+    public ComOptions Port { get; set; } = new();
+
+}
+public class ComOptions
+{
+
+    /// <summary>
+    /// 是否启用自动协商参数
+    /// </summary>
+    public bool Auto { get; set; } = true;
+
+    /// <summary>
+    /// 波特率，AutoNegotiate = true 时可忽略
+    /// </summary>
+    public int BaudRate { get; set; } = 9600;
+
+    /// <summary>
+    /// 奇偶校验，AutoNegotiate = true 时可忽略
+    /// </summary>
+    public Parity Parity { get; set; } = Parity.None;
+
+    /// <summary>
+    /// 数据位，AutoNegotiate = true 时可忽略
+    /// </summary>
+    public int DataBits { get; set; } = 8;
+
+    /// <summary>
+    /// 停止位，AutoNegotiate = true 时可忽略
+    /// </summary>
+    public StopBits StopBits { get; set; } = StopBits.One;
+
 }
 
 /// <summary>
@@ -61,10 +91,10 @@ public sealed class CreateBuilder
 {
     private readonly string _channelName;
     private readonly List<ComChannel> _channels = [];
-    private int _frameTimeout = 500; // 单帧超时，默认 500ms
+    private TimeSpan _frameTimeout = TimeSpan.FromMilliseconds(500); // 单帧超时，默认 500ms
     private int _retryCount = 1;     // 默认重试 1 次
-    private int _baudRate = 2400;    // 默认波特率
-    private int _maxLength = 2400;    // 默认波特率
+    private int _maxLength = 1024;    // 帧的最大长度
+    private ComOptions _port = new(); // 默认 COM 端口设置
 
     /// <summary>
     /// 初始化 <see cref="CreateBuilder"/> 类的新实例。
@@ -77,15 +107,71 @@ public sealed class CreateBuilder
     }
 
     /// <summary>
-    /// 添加串口通道。
+    /// 配置构建器以使用指定的 COM 端口设置。
     /// </summary>
-    /// <param name="comPort">串口名称（如 COM1）</param>
-    /// <param name="addresses">该串口下的设备地址列表</param>
+    /// <param name="options">要应用于构建器的 COM 端口设置。不能为空。</param>
+    /// <returns>更新了 COM 配置的构建器实例</returns>
+    public CreateBuilder WithCom(ComOptions options)
+    {
+        _port = options;
+        return this;
+    }
+
+    /// <summary>
+    /// 添加串口通道并绑定地址列表。
+    /// </summary>
+    /// <param name="comPort">串口名称</param>
+    /// <param name="addresses">设备地址列表</param>
     /// <returns>当前构建器实例</returns>
     public CreateBuilder WithChannel(string comPort, params byte[] addresses)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
         _channels.Add(new ComChannel(comPort, addresses));
+        return this;
+    }
+
+    /// <summary>
+    /// 设置是否启用自动协商参数
+    /// </summary>
+    public CreateBuilder WithAuto(bool auto)
+    {
+        _port.Auto = auto;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置波特率
+    /// </summary>
+    public CreateBuilder WithBaudRate(int baudrate)
+    {
+        _port.BaudRate = baudrate;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置奇偶校验
+    /// </summary>
+    public CreateBuilder WithParity(Parity parity)
+    {
+        _port.Parity = parity;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置数据位
+    /// </summary>
+    public CreateBuilder WithDataBits(int dataBits)
+    {
+        _port.DataBits = dataBits;
+        return this;
+    }
+
+    /// <summary>
+    /// 设置停止位
+    /// </summary>
+    public CreateBuilder WithStopBits(StopBits stopBits)
+    {
+        _port.StopBits = stopBits;
         return this;
     }
 
@@ -127,7 +213,17 @@ public sealed class CreateBuilder
     public CreateBuilder WithTimeout(int milliseconds)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(milliseconds, 100, nameof(milliseconds));
-        _frameTimeout = milliseconds;
+        _frameTimeout = new TimeSpan(0, 0, 0, 0, milliseconds);
+        return this;
+    }
+    /// <summary>
+    /// 设置单帧超时时间。
+    /// </summary>
+    /// <param name="timeSpan">时间间隔（1 tick = 100 纳秒）</param>
+    /// <returns>当前构建器实例</returns>
+    public CreateBuilder WithTimeout(TimeSpan timeSpan)
+    {
+        _frameTimeout = timeSpan;
         return this;
     }
 
@@ -143,17 +239,6 @@ public sealed class CreateBuilder
         return this;
     }
 
-    /// <summary>
-    /// 设置波特率。
-    /// </summary>
-    /// <param name="baudRate">波特率（常用值：1200, 2400, 4800, 9600）</param>
-    /// <returns>当前构建器实例</returns>
-    public CreateBuilder WithBaudRate(int baudRate)
-    {
-        ArgumentOutOfRangeException.ThrowIfLessThan(baudRate, 1200, nameof(baudRate));
-        _baudRate = baudRate;
-        return this;
-    }
 
     /// <summary>
     /// 使用指定的帧的最大长度 。
@@ -176,6 +261,7 @@ public sealed class CreateBuilder
         Channels = new ReadOnlyCollection<ComChannel>(_channels),
         Timeout = _frameTimeout,
         RetryCount = _retryCount,
-        BaudRate = _baudRate
+        MaxLength = _maxLength,
+        Port = _port
     };
 }

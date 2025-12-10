@@ -18,17 +18,20 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     public Action<SerialPort>? OnSuccess { get; set; }
     public Action<SerialPort, byte[]>? OnMessage { get; set; }
     public Dlt645Client() : base(new("default"), NullLoggerFactory.Instance)
-    {
-        _logger = NullLogger<Dlt645Client>.Instance;
-    }
+        => _logger = NullLogger<Dlt645Client>.Instance;
     public Dlt645Client(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
-    {
-        _logger = loggerFactory.CreateLogger<Dlt645Client>();
-    }
+        => _logger = loggerFactory.CreateLogger<Dlt645Client>();
 
 
 
     public Task<bool> TrySendAsync(byte data, out byte[] message)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    public Task<bool> TrySendAsync<T>(T data)
+        where T : AbstractMessage, new()
     {
         throw new NotImplementedException();
     }
@@ -38,13 +41,6 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         throw new NotImplementedException();
     }
 
-
-
-    public Task<bool> TrySendAsync<T>(T data)
-        where T : AbstractMessage, new()
-    {
-        throw new NotImplementedException();
-    }
 
 
     public async Task<IAsyncEnumerable<MessageHeader>> TryReadAddressAsync(CancellationToken cancellationToken = default)
@@ -137,13 +133,13 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     private async IAsyncEnumerable<MessageHeader> ReadLoopAsync(
      SerialPort port,
-     int timeoutMilliseconds,
+     TimeSpan timeSpan,
      [EnumeratorCancellation] CancellationToken stoppingToken)
     {
         ArgumentNullException.ThrowIfNull(port);
         byte[] recvBuffer = new byte[1024];
 
-        port.ReadTimeout = timeoutMilliseconds;
+        port.ReadTimeout = timeSpan.Milliseconds;
         while (!stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(1, stoppingToken)

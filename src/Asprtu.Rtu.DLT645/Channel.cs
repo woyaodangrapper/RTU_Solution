@@ -1,4 +1,5 @@
 ﻿using Asprtu.Rtu.DLT645.Contracts;
+using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
@@ -14,9 +15,6 @@ public class Channel : IDisposable
 {
     private readonly CancellationTokenSource _cancellation = new();
     private readonly ILogger<Channel> _logger;
-
-
-
 
     protected CircularBuffer Buffer { get; }
 
@@ -68,22 +66,24 @@ public class Channel : IDisposable
 
     protected Channel([NotNull] ChannelOptions options, ILoggerFactory loggerFactory)
     {
-        Options = options ?? throw new ArgumentNullException(nameof(options));
         _logger = loggerFactory.CreateLogger<Channel>();
+
+        Options = options ?? throw new ArgumentNullException(nameof(options));
         Buffer = new CircularBuffer(options.MaxLength);
+        CreateAsync().GetAwaiter().GetResult();
+    }
+
+    private async Task CreateAsync()
+    {
+
         // 初始化并打开所有串口
-        foreach (var com in options.Channels.Distinct())
+        foreach (var com in Options.Channels.Distinct())
         {
-            var port = new SerialPort(
-                com.Port,
-                options.BaudRate,
-                Parity.None,
-                8,
-                StopBits.One)
-            {
-                ReadTimeout = options.Timeout,
-                WriteTimeout = options.Timeout
-            };
+            SerialPort port = await SerialPortExtensions.AutoNegotiateAsync(
+                portName: com.Port,
+                timeout: Options.Timeout,
+                Options.Port
+            ).ConfigureAwait(false);
 
             Ports.Add(port);
 
@@ -120,8 +120,8 @@ public class Channel : IDisposable
         }
 
         LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
-    }
 
+    }
     /// <summary>
     /// 检查串口是否已连接并可用。
     /// </summary>
