@@ -1,4 +1,6 @@
 using Asprtu.Rtu.DLT645.Extensions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using RJCP.IO.Ports;
 using System.Collections.ObjectModel;
 
@@ -95,17 +97,26 @@ public sealed class CreateBuilder
     private int _retryCount = 1;     // 默认重试 1 次
     private int _maxLength = 1024;    // 帧的最大长度
     private ComOptions _port = new(); // 默认 COM 端口设置
-
+    private ILoggerFactory _loggerFactory = NullLoggerFactory.Instance;
     /// <summary>
     /// 初始化 <see cref="CreateBuilder"/> 类的新实例。
     /// </summary>
     /// <param name="channelName">通道唯一名称</param>
-    public CreateBuilder(string channelName)
+    public CreateBuilder(string channelName = "MyChannel")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(channelName, nameof(channelName));
         _channelName = channelName;
     }
 
+    /// <summary>
+    /// 设置 LoggerFactory
+    /// </summary>
+    public CreateBuilder WithLogger(ILoggerFactory factory)
+    {
+        ArgumentNullException.ThrowIfNull(factory);
+        _loggerFactory = factory;
+        return this;
+    }
     /// <summary>
     /// 配置构建器以使用指定的 COM 端口设置。
     /// </summary>
@@ -264,4 +275,7 @@ public sealed class CreateBuilder
         MaxLength = _maxLength,
         Port = _port
     };
+
+
+    public Dlt645Client Run() => new(Build(), _loggerFactory);
 }
