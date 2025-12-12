@@ -14,6 +14,7 @@ var console = LoggerFactory.Create(builder =>
 
 var channel = new CreateBuilder("MyChannel")
     .WithChannel("COM5")
+    .WithLogger(console)
     .Run();
 
 //var client = new Dlt645Client(channelOptions, console);
