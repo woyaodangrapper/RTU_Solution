@@ -1,6 +1,6 @@
 using Asprtu.Rtu.DLT645.Extensions;
+using RJCP.IO.Ports;
 using System.Collections.ObjectModel;
-using System.IO.Ports;
 
 namespace Asprtu.Rtu.DLT645.Contracts;
 

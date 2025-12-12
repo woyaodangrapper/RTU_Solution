@@ -1,6 +1,7 @@
 ﻿using Asprtu.Rtu.Contracts.DLT645;
 using Asprtu.Rtu.DLT645.Contracts;
-using System.IO.Ports;
+using RJCP.IO.Ports;
+using System.Buffers;
 
 namespace Asprtu.Rtu.DLT645.Extensions;
 
@@ -10,9 +11,9 @@ internal class SerialPortExtensions
     /// 配置一组DLT645串口常用的奇偶校验、波特率、数据位、
     /// 和停止位设置。
     /// </summary>
-    /// <remarks>These candidates can be used to attempt communication with serial devices that may require
-    /// different standard configurations. The array includes common combinations such as 8 data bits with even parity
-    /// at 2400 or 9600 baud, and 7 data bits with even parity at the same baud rates.</remarks>
+    /// <remarks>这些候选者可用于尝试与可能需要的串行设备进行通信
+    /// 不同的标准配置。该阵列包括常见组合，例如具有偶校验的 8 个数据位
+    /// 在 2400 或 9600 波特率下，以及在相同波特率下具有偶校验的 7 个数据位。</remarks>
     private static readonly (Parity parity, int baud, int databits, StopBits stopBits)[] _candidates =
     [
         // 8E1 @ 2400
@@ -30,7 +31,7 @@ internal class SerialPortExtensions
     /// <summary>
     /// 自动探测串口是否能正常与 DLT645 从机通讯
     /// </summary>
-    public static async Task<SerialPort> AutoNegotiateAsync(
+    public static async Task<SerialPortStream> AutoNegotiateAsync(
         string portName,
         TimeSpan timeout,
         ComOptions options,
@@ -38,41 +39,39 @@ internal class SerialPortExtensions
     {
         if (!options.Auto)
         {
-
-            return new SerialPort(portName, options.BaudRate, options.Parity, options.DataBits, options.StopBits)
+            return new(portName, options.BaudRate, options.DataBits, options.Parity, options.StopBits)
             {
                 ReadTimeout = (int)timeout.TotalMilliseconds,
                 WriteTimeout = (int)timeout.TotalMilliseconds
             };
         }
+
+        // 广播帧
+        MessageHeader messageHeader = new(
+           address: [.. Enumerable.Repeat((byte)0xAA, 6)],
+           control: ((byte)Command.ControlCode.ReadAddress),
+           bytes: []
+        );
+
+        messageHeader.ToBytes(out var bytes);
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(32); // 足够大
         foreach (var (parity, baud, databits, stopBits) in _candidates)
         {
-            using SerialPort port = new(portName, baud, parity, databits, stopBits)
+            using SerialPortStream port = new(portName, baud, databits, parity, stopBits)
             {
                 ReadTimeout = (int)timeout.TotalMilliseconds,
                 WriteTimeout = (int)timeout.TotalMilliseconds
             };
-            // 广播帧
-            MessageHeader messageHeader = new(
-               address: [.. Enumerable.Repeat((byte)0xAA, 6)],
-               control: ((byte)Command.ControlCode.ReadAddress),
-               bytes: []
-            );
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+            cts.CancelAfter(timeout);
 
-            int length = messageHeader.ToBytes(out var bytes);
             try
             {
+
                 port.Open();
-
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-                cts.CancelAfter(timeout); // 超时自动取消
-                await port.BaseStream.WriteAsync(bytes, cts.Token).ConfigureAwait(true);
-                await port.BaseStream.FlushAsync(cts.Token).ConfigureAwait(true);
-
-
-                byte[] buffer = new byte[32];
-                int read = await port.BaseStream.ReadAsync(buffer, cancellation)
-                    .ConfigureAwait(false);
+                await port.FlushAsync(cts.Token).ConfigureAwait(false);
+                await port.WriteAsync(bytes, cts.Token).ConfigureAwait(false);
+                int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
 
                 if (IsValid(buffer.AsSpan(0, read)))
                     return ClonePort(port);
@@ -93,21 +92,23 @@ internal class SerialPortExtensions
             {
                 // 忽略错误继续试
             }
+            finally
+            {
+                cts.Dispose();
+                await port.DisposeAsync()
+                    .ConfigureAwait(false);
+            }
         }
-
+        ArrayPool<byte>.Shared.Return(buffer);
         throw new InvalidOperationException($"无法与设备建立 DLT645 通讯（端口：{portName}）。");
     }
 
-    private static SerialPort ClonePort(SerialPort p)
-    {
-        // 重新打开一个真正用于后续通信的 SerialPort
-        var port = new SerialPort(p.PortName, p.BaudRate, p.Parity, p.DataBits, p.StopBits)
+    private static SerialPortStream ClonePort(SerialPortStream p)
+        => new(p.PortName, p.BaudRate, p.DataBits, p.Parity, p.StopBits)
         {
             ReadTimeout = p.ReadTimeout,
             WriteTimeout = p.WriteTimeout
         };
-        return port;
-    }
 
     /// <summary>
     /// 判断 68 起始 + CS 校验是否正确

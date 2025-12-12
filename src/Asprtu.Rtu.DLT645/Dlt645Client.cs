@@ -3,7 +3,7 @@ using Asprtu.Rtu.Contracts.DLT645;
 using Asprtu.Rtu.DLT645.Contracts;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.IO.Ports;
+using RJCP.IO.Ports;
 using System.Runtime.CompilerServices;
 
 namespace Asprtu.Rtu.DLT645;
@@ -15,8 +15,8 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
 
     public Action<Exception>? OnError { get; set; }
-    public Action<SerialPort>? OnSuccess { get; set; }
-    public Action<SerialPort, byte[]>? OnMessage { get; set; }
+    public Action<SerialPortStream>? OnSuccess { get; set; }
+    public Action<SerialPortStream, byte[]>? OnMessage { get; set; }
     public Dlt645Client() : base(new("default"), NullLoggerFactory.Instance)
         => _logger = NullLogger<Dlt645Client>.Instance;
     public Dlt645Client(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
@@ -132,7 +132,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
 
     private async IAsyncEnumerable<MessageHeader> ReadLoopAsync(
-     SerialPort port,
+     SerialPortStream port,
      TimeSpan timeSpan,
      [EnumeratorCancellation] CancellationToken stoppingToken)
     {

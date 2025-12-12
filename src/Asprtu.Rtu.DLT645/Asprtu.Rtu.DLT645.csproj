@@ -4,7 +4,7 @@
 		<ProjectReference Include="..\Infrastructures\Asprtu.Rtu\Asprtu.Rtu.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="System.IO.Ports" Version="10.0.1" />
+	  <PackageReference Include="RJCP.SerialPortStream" Version="3.0.4" />
 	</ItemGroup>
 
 </Project>

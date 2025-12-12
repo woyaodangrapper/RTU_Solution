@@ -1,9 +1,9 @@
 ﻿using Asprtu.Rtu.DLT645.Contracts;
 using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
+using RJCP.IO.Ports;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.IO.Ports;
 
 namespace Asprtu.Rtu.DLT645;
 
@@ -32,7 +32,7 @@ public class Channel : IDisposable
     /// </summary>
     /// <remarks>该集合是只读的，反映了当前检测到的串行端口集
     /// 如果在应用程序运行时添加或删除端口，则内容可能会更改。</remarks>
-    public Collection<SerialPort> Ports { get; } = [];
+    public Collection<SerialPortStream> Ports { get; } = [];
 
 
     /// <summary>
@@ -79,7 +79,7 @@ public class Channel : IDisposable
         // 初始化并打开所有串口
         foreach (var com in Options.Channels.Distinct())
         {
-            SerialPort port = await SerialPortExtensions.AutoNegotiateAsync(
+            SerialPortStream port = await SerialPortExtensions.AutoNegotiateAsync(
                 portName: com.Port,
                 timeout: Options.Timeout,
                 Options.Port
@@ -127,7 +127,7 @@ public class Channel : IDisposable
     /// </summary>
     /// <param name="port">要检查的串口</param>
     /// <returns>如果串口已打开且可用则返回 true；否则返回 false</returns>
-    protected virtual bool IsConnected([NotNull] SerialPort port)
+    protected virtual bool IsConnected([NotNull] SerialPortStream port)
     {
         ArgumentNullException.ThrowIfNull(port);
 
