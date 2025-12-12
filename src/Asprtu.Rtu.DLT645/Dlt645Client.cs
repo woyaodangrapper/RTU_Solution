@@ -1,9 +1,11 @@
 using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.DLT645;
 using Asprtu.Rtu.DLT645.Contracts;
+using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using RJCP.IO.Ports;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Asprtu.Rtu.DLT645;
@@ -17,43 +19,148 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     public Action<Exception>? OnError { get; set; }
     public Action<SerialPortStream>? OnSuccess { get; set; }
     public Action<SerialPortStream, byte[]>? OnMessage { get; set; }
+
     public Dlt645Client() : base(new("default"), NullLoggerFactory.Instance)
-        => _logger = NullLogger<Dlt645Client>.Instance;
+    {
+        _logger = NullLogger<Dlt645Client>.Instance;
+        CreateAsync().GetAwaiter().GetResult();
+    }
     public Dlt645Client(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
-        => _logger = loggerFactory.CreateLogger<Dlt645Client>();
-
-
-
-    public Task<bool> TrySendAsync(byte data, out byte[] message)
     {
-        throw new NotImplementedException();
+        _logger = loggerFactory.CreateLogger<Dlt645Client>();
+        CreateAsync().GetAwaiter().GetResult();
     }
 
 
-    public Task<bool> TrySendAsync<T>(T data)
+    public override async Task CreateAsync()
+    {
+        await base.CreateAsync()
+            .ConfigureAwait(false);
+
+        foreach (var item in Ports)
+        {
+            if (item != null && item.IsOpen)
+            {
+                OnSuccess?.Invoke(item);
+            }
+        }
+    }
+
+    public IAsyncEnumerable<MessageHeader> TrySendAsync(byte code, byte[] addresses, CancellationToken cancellationToken = default)
+    {
+        MessageHeader messageHeader = new(
+           address: addresses,
+           control: code,
+           bytes: []
+        );
+        messageHeader.ToBytes(out var messageBytes);
+        return TryWriteAsync(messageBytes, cancellationToken);
+    }
+
+    public IAsyncEnumerable<MessageHeader> TrySendAsync<T>(T command, byte[] addresses, CancellationToken cancellationToken = default)
+        where T : Enum
+    {
+        var type = typeof(T);
+        if (Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
+            return TrySendAsync(Convert.ToByte(command), addresses, cancellationToken);
+        return EmptyAsync();
+    }
+    public async IAsyncEnumerable<MessageHeader> TrySendAsync<T>(T command, string addresses,
+         [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var type = typeof(T);
+        if (!type.IsEnum || !Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
+        {
+            yield break; // 不支持的命令类型，返回空序列
+        }
+        var messages = AddressFormatExtension.FormatAddresses(addresses)
+            .Select(addr => new MessageHeader(
+                address: addr,
+                control: Convert.ToByte(command),
+                bytes: []
+            ));
+        await foreach (var header in TrySendAsync(messages, cancellationToken)
+          .WithCancellation(cancellationToken)
+          .ConfigureAwait(false))
+        {
+            yield return header;
+        }
+    }
+
+    public async IAsyncEnumerable<MessageHeader> TrySendAsync([NotNull] IEnumerable<MessageHeader> messages,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        foreach (var message in messages)
+        {
+            await Task.Delay(35, cancellationToken)
+                .ConfigureAwait(true); // 遵循 DL/T 645 协议的最小帧间隔时间 30ms，加一点余量
+            await foreach (var header in TrySendAsync(message, cancellationToken)
+            .WithCancellation(cancellationToken)
+            .ConfigureAwait(false))
+            {
+                yield return header;
+            }
+        }
+    }
+
+
+    public IAsyncEnumerable<MessageHeader> TrySendAsync(MessageHeader message, CancellationToken cancellationToken = default)
+        => TryWriteAsync(message.ToBytes(), cancellationToken);
+
+    public IAsyncEnumerable<MessageHeader> TrySendAsync<T>([NotNull] T data, CancellationToken cancellationToken = default)
         where T : AbstractMessage, new()
+        => TryWriteAsync(data.Serialize(), cancellationToken);
+
+    public async IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes,
+    [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        if (!IsPortsConnected())
+        {
+            OnError?.Invoke(new InvalidOperationException("No open serial ports available."));
+            _logger.LogError("No open serial ports available.");
+            yield return default;
+        }
+
+        // 广播到所有通道
+        var sendTasks = Options.Channels.Distinct()
+            .Select(com => WriteAsync(com.Port, bytes, 0, bytes.Length, cancellationToken));
+        try
+        {
+            await Task.WhenAll(sendTasks).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogError(ex, "Operation was canceled while sending broadcast frame");
+            OnError?.Invoke(ex); // 触发 OnError
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(ex, "IO error occurred while sending broadcast frame");
+            OnError?.Invoke(ex); // 触发 OnError
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Invalid operation while sending broadcast frame");
+            OnError?.Invoke(ex); // 触发 OnError
+        }
+
+        // 等待返回帧
+        await foreach (var frame in ReceiveFrameAsync(cancellationToken)
+            .WithCancellation(cancellationToken))
+        {
+            yield return frame;
+        }
     }
-
-    public Task<bool> TryWriteAsync(byte[] bytes)
-    {
-        throw new NotImplementedException();
-    }
-
-
 
     public async Task<IAsyncEnumerable<MessageHeader>> TryReadAddressAsync(CancellationToken cancellationToken = default)
     {
         if (!IsPortsConnected())
-        {
             throw new InvalidOperationException("No open serial ports available.");
-        }
 
         // 广播帧
         MessageHeader messageHeader = new(
            address: [.. Enumerable.Repeat((byte)0xAA, 6)],
-           control: ((byte)Command.ControlCode.ReadAddress),
+           control: ((byte)Command.Code.ReadAddress),
            bytes: []
         );
 
@@ -73,6 +180,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             catch (Exception ex) when (retry < Options.RetryCount)
             {
                 _logger.LogError(ex, "Error sending broadcast frame, retrying {Retry}/{MaxRetries}", retry + 1, Options.RetryCount);
+                OnError?.Invoke(ex);
             }
         }
 
@@ -147,11 +255,8 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             int bytesRead;
             try
             {
-                bytesRead = Read(
-                    port.PortName,      // 入参要求
-                    recvBuffer,         // 缓冲
-                    0,
-                    recvBuffer.Length); // 1024
+                bytesRead = await ReadAsync(port.PortName, recvBuffer, 0, recvBuffer.Length, stoppingToken)
+                    .ConfigureAwait(false); // 1024
             }
             catch (TimeoutException)
             {
@@ -163,11 +268,13 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             }
             catch (IOException ex)
             {
+                OnError?.Invoke(ex);
                 _logger.LogError(ex, "IO error occurred while reading from port {PortName}", port.PortName);
                 break;
             }
             catch (InvalidOperationException ex)
             {
+                OnError?.Invoke(ex);
                 _logger.LogError(ex, "Invalid operation while reading from port {PortName}", port.PortName);
                 break;
             }
@@ -181,12 +288,15 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
             if (!TryAssemble(out var frame))
                 continue;
-
+            OnMessage?.Invoke(port, frame);
             yield return new(frame);
         }
     }
 
-
+    private static async IAsyncEnumerable<MessageHeader> EmptyAsync()
+    {
+        yield break;
+    }
     private bool TryAssemble(out byte[] frame)
     {
         frame = default!;
@@ -221,7 +331,10 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         // 验证结束符
         if (frame[^1] != 0x16)
+        {
+            OnError?.Invoke(new InvalidDataException("DLT645 帧结束符无效。"));
             return false;
+        }
 
         // 验证校验
         byte cs = frame[^2];
@@ -230,7 +343,10 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             sum += frame[i];
 
         if (sum != cs)
+        {
+            OnError?.Invoke(new InvalidDataException("DLT645 帧校验失败。"));
             return false;
+        }
 
         return true;
     }

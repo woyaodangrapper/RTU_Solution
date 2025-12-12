@@ -70,12 +70,10 @@ public class Channel : IDisposable
 
         Options = options ?? throw new ArgumentNullException(nameof(options));
         Buffer = new CircularBuffer(options.MaxLength);
-        CreateAsync().GetAwaiter().GetResult();
     }
 
-    private async Task CreateAsync()
+    public virtual async Task CreateAsync()
     {
-
         // 初始化并打开所有串口
         foreach (var com in Options.Channels.Distinct())
         {
@@ -118,9 +116,7 @@ public class Channel : IDisposable
                 throw;
             }
         }
-
         LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
-
     }
     /// <summary>
     /// 检查串口是否已连接并可用。
@@ -192,6 +188,58 @@ public class Channel : IDisposable
         if (!port.IsOpen)
             throw new InvalidOperationException($"Port {comPort} is not open.");
         return port.Read(buffer, offset, count);
+    }
+    /// <summary>
+    /// 异步写入数据到指定串口。
+    /// </summary>
+    public async Task<int> WriteAsync(
+        string comPort,
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
+                   ?? throw new InvalidOperationException($"Port {comPort} not found.");
+
+        if (!port.IsOpen)
+            throw new InvalidOperationException($"Port {comPort} is not open.");
+
+        // 清除旧输入数据
+        port.DiscardInBuffer();
+
+        // 清除输出缓冲区
+        port.DiscardOutBuffer();
+
+        await port.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+
+        await port.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        return count;
+    }
+
+    /// <summary>
+    /// 异步从指定串口读取数据。
+    /// </summary>
+    public async Task<int> ReadAsync(
+        string comPort,
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
+                   ?? throw new InvalidOperationException($"Port {comPort} not found.");
+
+        if (!port.IsOpen)
+            throw new InvalidOperationException($"Port {comPort} is not open.");
+
+        return await port.ReadAsync(buffer.AsMemory(offset, count), cancellationToken)
+                         .ConfigureAwait(false);
     }
 
     protected virtual void Dispose(bool disposing)

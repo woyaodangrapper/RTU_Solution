@@ -1,5 +1,8 @@
 ﻿namespace Asprtu.Rtu.DLT645.Contracts;
 
+[AttributeUsage(AttributeTargets.Enum)]
+public sealed class EnumCommandAttribute : Attribute { }
+
 /// <summary>
 /// DLT645 协议命令定义（静态容器）
 /// </summary>
@@ -9,7 +12,7 @@ public static class Command
     /// <summary>
     /// 电能量相关数据标识符
     /// </summary>
-    [Flags]
+    [Flags, EnumCommand]
     public enum EnergyData
     {
         /// <summary>
@@ -88,6 +91,7 @@ public static class Command
     /// <summary>
     /// 最大需量数据标识符
     /// </summary>
+    [EnumCommand]
     public enum MaximumDemand
     {
         /// <summary>
@@ -111,6 +115,7 @@ public static class Command
     /// <summary>
     /// 瞬时量/变量数据标识符
     /// </summary>
+    [EnumCommand]
     public enum Variables
     {
         /// <summary>
@@ -264,6 +269,7 @@ public static class Command
     /// <summary>
     /// 参变量数据标识符
     /// </summary>
+    [EnumCommand]
     public enum Parameters
     {
         /// <summary>
@@ -303,6 +309,7 @@ public static class Command
     /// DLT645 冻结类型枚举
     /// Freeze Type Enumeration
     /// </summary>
+    [EnumCommand]
     public enum Freeze
     {
         /// <summary>
@@ -340,6 +347,7 @@ public static class Command
     /// <summary>
     /// DLT645-1997 兼容数据标识符
     /// </summary>
+    [EnumCommand]
     public enum Legacy1997
     {
         /// <summary>
@@ -360,10 +368,12 @@ public static class Command
     #endregion
 
     #region 控制代码  
+
     /// <summary>
     /// DLT645 协议控制代码
     /// </summary>
-    public enum ControlCode
+    [EnumCommand]
+    public enum Code
     {
         /// <summary>
         /// 0. 无

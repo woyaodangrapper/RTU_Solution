@@ -20,7 +20,20 @@ public sealed class CircularBuffer
         buffer = new byte[capacity];
         mask = capacity - 1;
     }
+    public void Clear()
+    {
+        Interlocked.Exchange(ref headIndex, 0);
+        Interlocked.Exchange(ref tailIndex, 0);
+    }
 
+    public void Skip(int length)
+    {
+        int available = Count;
+        if (length > available)
+            length = available;
+
+        Interlocked.Add(ref headIndex, length);
+    }
     /// <summary>
     /// 只读取数据而不移动 headIndex（读指针）
     /// </summary>

@@ -103,6 +103,12 @@ public struct MessageHeader : IEquatable<MessageHeader>
         }
     }
 
+    public readonly byte[] ToBytes()
+    {
+        ToBytes(out byte[] buffer);
+        return buffer;
+    }
+
     private static byte CalculateChecksum(Span<byte> data)
     {
         byte checksum = 0;

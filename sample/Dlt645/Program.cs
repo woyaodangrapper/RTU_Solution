@@ -18,8 +18,14 @@ var channel = new CreateBuilder("MyChannel")
     .Run();
 
 //var client = new Dlt645Client(channelOptions, console);
-await foreach (var frame in await channel.TryReadAddressAsync())
+//await foreach (var frame in await channel.TryReadAddressAsync())
+//{
+//    Console.WriteLine($"Received address: {BitConverter.ToString(frame.Address)}");
+//}
+
+await foreach (var frame in channel.TrySendAsync(Command.EnergyData.None, "11-11-00-00-00-00"))
 {
-    Console.WriteLine($"Received address: {BitConverter.ToString(frame.Address)}");
+    Console.WriteLine($"{BitConverter.ToString(frame.Address)}");
 }
+
 Console.WriteLine("Hello, World!");

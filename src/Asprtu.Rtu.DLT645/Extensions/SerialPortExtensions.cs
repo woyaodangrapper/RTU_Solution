@@ -49,7 +49,7 @@ internal class SerialPortExtensions
         // 广播帧
         MessageHeader messageHeader = new(
            address: [.. Enumerable.Repeat((byte)0xAA, 6)],
-           control: ((byte)Command.ControlCode.ReadAddress),
+           control: ((byte)Command.Code.ReadAddress),
            bytes: []
         );
 
@@ -94,7 +94,12 @@ internal class SerialPortExtensions
             }
             finally
             {
+                port.DiscardInBuffer();
+                port.DiscardOutBuffer();
                 cts.Dispose();
+
+                ArrayPool<byte>.Shared.Return(buffer);
+
                 await port.DisposeAsync()
                     .ConfigureAwait(false);
             }
