@@ -71,7 +71,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         var type = typeof(T);
         if (!type.IsEnum || !Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
         {
-            yield break; // ²»Ö§³ÖµÄÃüÁîÀàĞÍ£¬·µ»Ø¿ÕĞòÁĞ
+            yield break; // ä¸æ”¯æŒçš„å‘½ä»¤ç±»å‹ï¼Œè¿”å›ç©ºåºåˆ—
         }
         var messages = AddressFormatExtension.FormatAddresses(addresses)
             .Select(addr => new MessageHeader(
@@ -93,7 +93,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         foreach (var message in messages)
         {
             await Task.Delay(35, cancellationToken)
-                .ConfigureAwait(true); // ×ñÑ­ DL/T 645 Ğ­ÒéµÄ×îĞ¡Ö¡¼ä¸ôÊ±¼ä 30ms£¬¼ÓÒ»µãÓàÁ¿
+                .ConfigureAwait(true); // éµå¾ª DL/T 645 åè®®çš„æœ€å°å¸§é—´éš”æ—¶é—´ 30msï¼ŒåŠ ä¸€ç‚¹ä½™é‡
             await foreach (var header in TrySendAsync(message, cancellationToken)
             .WithCancellation(cancellationToken)
             .ConfigureAwait(false))
@@ -121,7 +121,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             yield return default;
         }
 
-        // ¹ã²¥µ½ËùÓĞÍ¨µÀ
+        // å¹¿æ’­åˆ°æ‰€æœ‰é€šé“
         var sendTasks = Options.Channels.Distinct()
             .Select(com => WriteAsync(com.Port, bytes, 0, bytes.Length, cancellationToken));
         try
@@ -131,20 +131,20 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         catch (OperationCanceledException ex)
         {
             _logger.LogError(ex, "Operation was canceled while sending broadcast frame");
-            OnError?.Invoke(ex); // ´¥·¢ OnError
+            OnError?.Invoke(ex); // è§¦å‘ OnError
         }
         catch (IOException ex)
         {
             _logger.LogError(ex, "IO error occurred while sending broadcast frame");
-            OnError?.Invoke(ex); // ´¥·¢ OnError
+            OnError?.Invoke(ex); // è§¦å‘ OnError
         }
         catch (InvalidOperationException ex)
         {
             _logger.LogError(ex, "Invalid operation while sending broadcast frame");
-            OnError?.Invoke(ex); // ´¥·¢ OnError
+            OnError?.Invoke(ex); // è§¦å‘ OnError
         }
 
-        // µÈ´ı·µ»ØÖ¡
+        // ç­‰å¾…è¿”å›å¸§
         await foreach (var frame in ReceiveFrameAsync(cancellationToken)
             .WithCancellation(cancellationToken))
         {
@@ -157,7 +157,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         if (!IsPortsConnected())
             throw new InvalidOperationException("No open serial ports available.");
 
-        // ¹ã²¥Ö¡
+        // å¹¿æ’­å¸§
         MessageHeader messageHeader = new(
            address: [.. Enumerable.Repeat((byte)0xAA, 6)],
            control: ((byte)Command.Code.ReadAddress),
@@ -166,7 +166,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         int length = messageHeader.ToBytes(out var bytes);
 
-        // ·¢ËÍ¹ã²¥Ö¡µ½ËùÓĞ´ò¿ªµÄ´®¿Ú
+        // å‘é€å¹¿æ’­å¸§åˆ°æ‰€æœ‰æ‰“å¼€çš„ä¸²å£
         var sendTasks = Options.Channels.Distinct().Select(com => Task.Run(() =>
          Write(com.Port, bytes, 0, length), cancellationToken));
 
@@ -184,7 +184,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             }
         }
 
-        // ¹ã²¥²»»áµÈ´ıÏìÓ¦
+        // å¹¿æ’­ä¸ä¼šç­‰å¾…å“åº”
         return ReceiveFrameAsync(cancellationToken);
     }
 
@@ -197,7 +197,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         foreach (var port in Ports.Where(p => p.IsOpen))
         {
-            // Õë¶ÔÃ¿¸ö¶Ë¿ÚÆô¶¯Ò»¸ö³ÖĞø¶ÁÈ¡µÄĞòÁĞ
+            // é’ˆå¯¹æ¯ä¸ªç«¯å£å¯åŠ¨ä¸€ä¸ªæŒç»­è¯»å–çš„åºåˆ—
             readTasks.Add(ReadLoopAsync(port, Options.Timeout, cancellationToken));
         }
 
@@ -211,7 +211,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             }
         });
 
-        // Æô¶¯Ò»¸öÈÎÎñÀ´µÈ´ıËùÓĞ¶Ë¿Ú¶ÁÈ¡½áÊø
+        // å¯åŠ¨ä¸€ä¸ªä»»åŠ¡æ¥ç­‰å¾…æ‰€æœ‰ç«¯å£è¯»å–ç»“æŸ
         var completionTask = Task.WhenAll(portReadingTasks);
 
         try
@@ -251,7 +251,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         while (!stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(1, stoppingToken)
-                .ConfigureAwait(true); // ·ÀÖ¹ tight loop
+                .ConfigureAwait(true); // é˜²æ­¢ tight loop
             int bytesRead;
             try
             {
@@ -282,14 +282,15 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             if (bytesRead <= 0)
                 continue;
 
-            // Ğ´Èë»·ĞÎ»º³åÇø
+            // å†™å…¥ç¯å½¢ç¼“å†²åŒº
             Buffer.Write(recvBuffer.AsSpan(0, bytesRead));
 
-
-            if (!TryAssemble(out var frame))
-                continue;
-            OnMessage?.Invoke(port, frame);
-            yield return new(frame);
+            // å¾ªç¯æå–æ‰€æœ‰å¯ç”¨çš„å®Œæ•´å¸§ï¼ˆç²˜åŒ…å¤„ç†ï¼‰
+            while (TryAssemble(out var frame))
+            {
+                OnMessage?.Invoke(port, frame);
+                yield return new(frame);
+            }
         }
     }
 
@@ -297,58 +298,86 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     {
         yield break;
     }
+
     private bool TryAssemble(out byte[] frame)
     {
         frame = default!;
 
-        // Ìø¹ıÇ°µ¼ FE
-        while (Buffer.Count > 0 && Buffer.Peek(1)[0] == 0xFE)
-            Buffer.Read(1);
-
-        // ²»×ãÒÔ¶ÁÈ¡¹Ì¶¨Í·²¿
-        if (Buffer.Count < 10)
-            return false;
-
-        // ¹Ì¶¨Í·²¿£º68 + Address(6) + 68 + C + L = 10 ×Ö½Ú
-        var header = Buffer.Peek(10);
-
-        if (header[0] != 0x68 || header[7] != 0x68)
+        try
         {
-            Buffer.Read(1);
+            // è·³è¿‡å‰å¯¼ FE
+            while (Buffer.Count > 0 && Buffer.Peek(1)[0] == 0xFE)
+                Buffer.Read(1);
+
+            // ä¸è¶³ä»¥è¯»å–å›ºå®šå¤´éƒ¨
+            if (Buffer.Count < 10)
+                return false;
+
+            // å›ºå®šå¤´éƒ¨ï¼š68 + Address(6) + 68 + C + L = 10 å­—èŠ‚
+            var header = Buffer.Peek(10);
+
+            if (header[0] != 0x68 || header[7] != 0x68)
+            {
+                Buffer.Read(1);
+                return false;
+            }
+
+            // L = æ•°æ®åŒºé•¿åº¦
+            byte len = header[9];
+
+            if (len > 200) // æ”»å‡»/å¼‚å¸¸
+            {
+                Buffer.Read(1);  // ä¸¢å¼ƒæ— æ•ˆå¸§å¤´
+                OnError?.Invoke(new InvalidDataException($"DLT645 æ•°æ®é•¿åº¦å¼‚å¸¸: {len}"));
+                return false;
+            }
+
+            // 12å›ºå®šå¤´ + æ•°æ®åŒº + æ ¡éªŒ + ç»“æŸç¬¦
+            int total = 12 + len;
+
+            if (Buffer.Count < total)
+                return false;
+
+            frame = Buffer.Peek(total);
+
+            // éªŒè¯ç»“æŸç¬¦
+            if (frame[^1] != 0x16)
+            {
+                frame = [];
+                OnError?.Invoke(new InvalidDataException("DLT645 å¸§ç»“æŸç¬¦æ— æ•ˆã€‚"));
+                return false;
+            }
+
+            // éªŒè¯æ ¡éªŒ
+            byte cs = frame[^2];
+            byte sum = 0;
+            for (int i = 0; i < frame.Length - 2; i++)
+                sum += frame[i];
+
+            if (sum != cs)
+            {
+                OnError?.Invoke(new InvalidDataException("DLT645 å¸§æ ¡éªŒå¤±è´¥ã€‚"));
+                return false;
+            }
+            frame = Buffer.Read(total);
+            return true;
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            OnError?.Invoke(ex);
             return false;
         }
-
-        // L = Êı¾İÇø³¤¶È
-        byte len = header[9];
-
-        // 12¹Ì¶¨Í· + Êı¾İÇø + Ğ£Ñé + ½áÊø·û
-        int total = 12 + len;
-
-        if (Buffer.Count < total)
-            return false;
-
-        frame = Buffer.Read(total);
-
-        // ÑéÖ¤½áÊø·û
-        if (frame[^1] != 0x16)
+        catch (InvalidDataException ex)
         {
-            OnError?.Invoke(new InvalidDataException("DLT645 Ö¡½áÊø·ûÎŞĞ§¡£"));
+            OnError?.Invoke(ex);
             return false;
         }
-
-        // ÑéÖ¤Ğ£Ñé
-        byte cs = frame[^2];
-        byte sum = 0;
-        for (int i = 0; i < frame.Length - 2; i++)
-            sum += frame[i];
-
-        if (sum != cs)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            OnError?.Invoke(new InvalidDataException("DLT645 Ö¡Ğ£ÑéÊ§°Ü¡£"));
+            // æ•è·å…¶ä»–æœªé¢„æœŸä½†å…è®¸çš„å¼‚å¸¸ï¼Œæ’é™¤å–æ¶ˆæ“ä½œå¼‚å¸¸
+            OnError?.Invoke(ex);
             return false;
         }
-
-        return true;
     }
 
 }

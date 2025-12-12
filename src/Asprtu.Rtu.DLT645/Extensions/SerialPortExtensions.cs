@@ -55,57 +55,63 @@ internal class SerialPortExtensions
 
         messageHeader.ToBytes(out var bytes);
         byte[] buffer = ArrayPool<byte>.Shared.Rent(32); // 足够大
-        foreach (var (parity, baud, databits, stopBits) in _candidates)
+        try
         {
-            using SerialPortStream port = new(portName, baud, databits, parity, stopBits)
+            foreach (var (parity, baud, databits, stopBits) in _candidates)
             {
-                ReadTimeout = (int)timeout.TotalMilliseconds,
-                WriteTimeout = (int)timeout.TotalMilliseconds
-            };
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-            cts.CancelAfter(timeout);
+                using SerialPortStream port = new(portName, baud, databits, parity, stopBits)
+                {
+                    ReadTimeout = (int)timeout.TotalMilliseconds,
+                    WriteTimeout = (int)timeout.TotalMilliseconds
+                };
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+                cts.CancelAfter(timeout);
 
-            try
-            {
+                try
+                {
+                    port.Open();
+                    await port.FlushAsync(cts.Token).ConfigureAwait(false);
+                    await port.WriteAsync(bytes, cts.Token).ConfigureAwait(false);
+                    int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
 
-                port.Open();
-                await port.FlushAsync(cts.Token).ConfigureAwait(false);
-                await port.WriteAsync(bytes, cts.Token).ConfigureAwait(false);
-                int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
+                    if (IsValid(buffer.AsSpan(0, read)))
+                    {
+                        // 成功匹配，归还 buffer 后返回
+                        var result = ClonePort(port);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        return result;
+                    }
+                }
+                catch (IOException)
+                {
+                    // 忽略错误继续试
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // 忽略错误继续试
+                }
+                catch (OperationCanceledException)
+                {
+                    // 可以安全捕获超时或取消
+                }
+                catch (TimeoutException)
+                {
+                    // 忽略错误继续试
+                }
+                finally
+                {
+                    port.DiscardInBuffer();
+                    port.DiscardOutBuffer();
+                }
+            }
 
-                if (IsValid(buffer.AsSpan(0, read)))
-                    return ClonePort(port);
-            }
-            catch (IOException)
-            {
-                // 忽略错误继续试
-            }
-            catch (UnauthorizedAccessException)
-            {
-                // 忽略错误继续试
-            }
-            catch (OperationCanceledException)
-            {
-                // 可以安全捕获超时或取消
-            }
-            catch (TimeoutException)
-            {
-                // 忽略错误继续试
-            }
-            finally
-            {
-                port.DiscardInBuffer();
-                port.DiscardOutBuffer();
-                cts.Dispose();
-
-                ArrayPool<byte>.Shared.Return(buffer);
-
-                await port.DisposeAsync()
-                    .ConfigureAwait(false);
-            }
+            throw new InvalidOperationException($"无法与设备建立 DLT645 通讯（端口：{portName}）。");
         }
-        ArrayPool<byte>.Shared.Return(buffer);
-        throw new InvalidOperationException($"无法与设备建立 DLT645 通讯（端口：{portName}）。");
+        finally
+        {
+            // 确保 buffer 总是被归还
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     private static SerialPortStream ClonePort(SerialPortStream p)
