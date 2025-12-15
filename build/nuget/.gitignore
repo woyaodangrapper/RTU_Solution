@@ -1,0 +1,8 @@
+# 忽略打包输出目录
+nupkgs/
+*.nupkg
+*.snupkg
+
+# 忽略临时文件
+*.log
+*.tmp

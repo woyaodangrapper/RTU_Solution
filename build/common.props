@@ -32,10 +32,10 @@
 		<PackageIcon>icon.png</PackageIcon>
 
 		<!-- 设置仓库 URL -->
-		<RepositoryUrl>https://github.com/Asprtu</RepositoryUrl>
+		<RepositoryUrl>https://github.com/woyaodangrapper/Asprtu</RepositoryUrl>
 
 		<!-- 设置包项目 URL -->
-		<PackageProjectUrl>https://github.com/Asprtu</PackageProjectUrl>
+		<PackageProjectUrl>https://github.com/woyaodangrapper/RTU_Solution</PackageProjectUrl>
 
 		<!-- 设置仓库类型 -->
 		<RepositoryType>git</RepositoryType>

@@ -23,16 +23,28 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     public Dlt645Client() : base(new("default"), NullLoggerFactory.Instance)
     {
         _logger = NullLogger<Dlt645Client>.Instance;
-        CreateAsync().GetAwaiter().GetResult();
+        Create();
     }
     public Dlt645Client(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
     {
         _logger = loggerFactory.CreateLogger<Dlt645Client>();
-        CreateAsync().GetAwaiter().GetResult();
+        Create();
     }
 
+    protected override void Create()
+    {
+        base.Create();
 
-    public override async Task CreateAsync()
+        foreach (var item in Ports)
+        {
+            if (item != null && item.IsOpen)
+            {
+                OnSuccess?.Invoke(item);
+            }
+        }
+    }
+
+    protected override async Task CreateAsync()
     {
         await base.CreateAsync()
             .ConfigureAwait(false);

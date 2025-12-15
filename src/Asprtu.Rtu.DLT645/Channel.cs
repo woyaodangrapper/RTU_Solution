@@ -72,7 +72,7 @@ public class Channel : IDisposable
         Buffer = new CircularBuffer(options.MaxLength);
     }
 
-    public virtual async Task CreateAsync()
+    protected virtual async Task CreateAsync()
     {
         // 初始化并打开所有串口
         foreach (var com in Options.Channels.Distinct())
@@ -110,6 +110,39 @@ public class Channel : IDisposable
                 throw;
             }
             catch (IOException ex)
+            {
+                LogPortError(_logger, port.PortName, ex);
+                Dispose();
+                throw;
+            }
+        }
+        LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
+    }
+
+
+    // 改为同步方法
+    protected virtual void Create()
+    {
+        foreach (var com in Options.Channels.Distinct())
+        {
+            // 同步探测串口
+            SerialPortStream port = SerialPortExtensions.AutoNegotiate(
+                portName: com.Port,
+                timeout: Options.Timeout,
+                Options.Port
+            );
+
+            Ports.Add(port);
+
+            try
+            {
+                port.Open();
+                LogPortOpen(_logger, port.PortName, null);
+            }
+            catch (Exception ex) when (ex is UnauthorizedAccessException
+                                          or ArgumentException
+                                          or InvalidOperationException
+                                          or IOException)
             {
                 LogPortError(_logger, port.PortName, ex);
                 Dispose();

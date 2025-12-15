@@ -113,6 +113,76 @@ internal class SerialPortExtensions
         }
     }
 
+    // 同步版本
+    public static SerialPortStream AutoNegotiate(
+        string portName,
+        TimeSpan timeout,
+        ComOptions options)
+    {
+        if (!options.Auto)
+        {
+            return new(portName, options.BaudRate, options.DataBits, options.Parity, options.StopBits)
+            {
+                ReadTimeout = (int)timeout.TotalMilliseconds,
+                WriteTimeout = (int)timeout.TotalMilliseconds
+            };
+        }
+
+        MessageHeader messageHeader = new(
+           address: [.. Enumerable.Repeat((byte)0xAA, 6)],
+           control: ((byte)Command.Code.ReadAddress),
+           bytes: []
+        );
+
+        byte[] messageBytes = messageHeader.ToBytes();
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(32);
+
+        try
+        {
+            foreach (var (parity, baud, databits, stopBits) in _candidates)
+            {
+                using SerialPortStream port = new(portName, baud, databits, parity, stopBits)
+                {
+                    ReadTimeout = (int)timeout.TotalMilliseconds,
+                    WriteTimeout = (int)timeout.TotalMilliseconds
+                };
+
+                try
+                {
+                    port.Open();
+                    port.DiscardInBuffer();
+                    port.DiscardOutBuffer();
+                    port.Write(messageBytes);
+
+                    int read = port.Read(buffer, 0, buffer.Length);
+
+                    if (IsValid(buffer.AsSpan(0, read)))
+                    {
+                        var result = ClonePort(port);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        return result;
+                    }
+                }
+                catch (Exception ex) when (ex is IOException
+                                           or UnauthorizedAccessException
+                                           or TimeoutException)
+                {
+                    // 忽略,继续尝试
+                }
+                finally
+                {
+                    port.Close();
+                }
+            }
+
+            throw new InvalidOperationException($"无法与设备建立 DLT645 通讯(端口:{portName})。");
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
     private static SerialPortStream ClonePort(SerialPortStream p)
         => new(p.PortName, p.BaudRate, p.DataBits, p.Parity, p.StopBits)
         {
