@@ -100,8 +100,7 @@ internal class SerialPortExtensions
                 }
                 finally
                 {
-                    port.DiscardInBuffer();
-                    port.DiscardOutBuffer();
+                    port.Close(); // 释放底层缓冲区，终止所有
                 }
             }
 
