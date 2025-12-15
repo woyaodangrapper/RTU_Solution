@@ -53,7 +53,7 @@ internal class SerialPortExtensions
            bytes: []
         );
 
-        messageHeader.ToBytes(out var bytes);
+        byte[] messageBytes = messageHeader.ToBytes();
         byte[] buffer = ArrayPool<byte>.Shared.Rent(32); // 足够大
         try
         {
@@ -71,7 +71,7 @@ internal class SerialPortExtensions
                 {
                     port.Open();
                     await port.FlushAsync(cts.Token).ConfigureAwait(false);
-                    await port.WriteAsync(bytes, cts.Token).ConfigureAwait(false);
+                    await port.WriteAsync(messageBytes, cts.Token).ConfigureAwait(false);
                     int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
 
                     if (IsValid(buffer.AsSpan(0, read)))

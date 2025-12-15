@@ -53,8 +53,9 @@ public sealed class Dlt645Client : Channel, IDlt645Client
            control: code,
            bytes: []
         );
-        messageHeader.ToBytes(out var messageBytes);
-        return TryWriteAsync(messageBytes, cancellationToken);
+
+        var length = messageHeader.ToBytes(out var messageBytes);
+        return TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken);
     }
 
     public IAsyncEnumerable<MessageHeader> TrySendAsync<T>(T command, byte[] addresses, CancellationToken cancellationToken = default)

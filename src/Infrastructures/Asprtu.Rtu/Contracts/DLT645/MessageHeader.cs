@@ -72,8 +72,7 @@ public struct MessageHeader : IEquatable<MessageHeader>
             var span = buffer.AsSpan(0, length);
 
             // 前导码
-            if (Preamble != null)
-                Preamble.CopyTo(span[..preambleLength]);
+            Preamble?.CopyTo(span[..preambleLength]);
 
             int offset = preambleLength;
             span[offset++] = StartCode;
@@ -103,10 +102,51 @@ public struct MessageHeader : IEquatable<MessageHeader>
         }
     }
 
+    public readonly Memory<byte> ToMemory()
+    {
+        int length = 12 + Length + (Preamble?.Length ?? 0);
+        var buffer = new byte[length];
+        WriteToSpan(buffer.AsSpan());
+        return buffer;
+    }
+
     public readonly byte[] ToBytes()
     {
-        ToBytes(out byte[] buffer);
+        int length = 12 + Length + (Preamble?.Length ?? 0);
+        var buffer = new byte[length];
+        WriteToSpan(buffer.AsSpan());
         return buffer;
+    }
+
+    public readonly int ToSpan(Span<byte> span) => WriteToSpan(span);
+
+    private readonly int WriteToSpan(Span<byte> span)
+    {
+        int preambleLength = Preamble?.Length ?? 0;
+        int requiredLength = 12 + Length + preambleLength; // StartCode + Address + FrameStart + Code + Length + Checksum + EndCode
+
+        if (span.Length < requiredLength)
+            throw new ArgumentException($"Span too small, need {requiredLength} bytes.", nameof(span));
+
+        // 前导码
+        Preamble?.CopyTo(span[..preambleLength]);
+
+        int offset = preambleLength;
+        span[offset++] = StartCode;
+        Address.CopyTo(span.Slice(offset, 6));
+        offset += 6;
+        span[offset++] = FrameStart;
+        span[offset++] = Code;
+        span[offset++] = Length;
+
+        Data.CopyTo(span.Slice(offset, Length));
+        offset += Length;
+
+        // 校验码
+        span[offset++] = CalculateChecksum(span[preambleLength..offset]);
+        span[offset++] = EndCode;
+
+        return offset; // 实际写入长度
     }
 
     private static byte CalculateChecksum(Span<byte> data)
