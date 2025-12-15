@@ -114,6 +114,16 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     public async IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes,
     [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        await foreach (var frame in TryWriteAsync(bytes.AsMemory(), cancellationToken)
+            .ConfigureAwait(false))
+        {
+            yield return frame;
+        }
+    }
+
+    public async IAsyncEnumerable<MessageHeader> TryWriteAsync(ReadOnlyMemory<byte> buffer,
+    [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
         if (!IsPortsConnected())
         {
             OnError?.Invoke(new InvalidOperationException("No open serial ports available."));
@@ -123,7 +133,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         // 广播到所有通道
         var sendTasks = Options.Channels.Distinct()
-            .Select(com => WriteAsync(com.Port, bytes, 0, bytes.Length, cancellationToken));
+            .Select(com => WriteAsync(com.Port, buffer, cancellationToken));
         try
         {
             await Task.WhenAll(sendTasks).ConfigureAwait(false);

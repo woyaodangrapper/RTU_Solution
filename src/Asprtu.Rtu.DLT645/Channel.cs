@@ -155,7 +155,7 @@ public class Channel : IDisposable
     /// <summary>
     /// 写入数据到指定串口。
     /// </summary>
-    public int Write(string comPort, byte[] buffer, int offset, int count)
+    public int Write(string comPort, ReadOnlySpan<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -171,14 +171,20 @@ public class Channel : IDisposable
         // 清除输出缓冲区（可选，但推荐）
         port.DiscardOutBuffer();
 
-        port.Write(buffer, offset, count);
-        return count;
+        port.Write(buffer);
+        return buffer.Length;
     }
+
+    public int Write(string comPort, byte[] buffer, int offset, int count)
+        => Write(comPort, buffer.AsSpan(offset, count));
+
+    public int Write(string comPort, byte[] buffer)
+        => Write(comPort, buffer.AsSpan());
 
     /// <summary>
     /// 从指定串口读取数据。
     /// </summary>
-    public int Read(string comPort, byte[] buffer, int offset, int count)
+    public int Read(string comPort, Span<byte> buffer)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
@@ -187,16 +193,20 @@ public class Channel : IDisposable
 
         if (!port.IsOpen)
             throw new InvalidOperationException($"Port {comPort} is not open.");
-        return port.Read(buffer, offset, count);
+        return port.Read(buffer);
     }
+
+    public int Read(string comPort, byte[] buffer, int offset, int count)
+        => Read(comPort, buffer.AsSpan(offset, count));
+
+    public int Read(string comPort, byte[] buffer)
+        => Read(comPort, buffer.AsSpan());
     /// <summary>
     /// 异步写入数据到指定串口。
     /// </summary>
     public async Task<int> WriteAsync(
         string comPort,
-        byte[] buffer,
-        int offset,
-        int count,
+        ReadOnlyMemory<byte> buffer,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -213,21 +223,33 @@ public class Channel : IDisposable
         // 清除输出缓冲区
         port.DiscardOutBuffer();
 
-        await port.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
+        await port.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
         await port.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        return count;
+        return buffer.Length;
     }
+
+    public Task<int> WriteAsync(
+        string comPort,
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken = default)
+        => WriteAsync(comPort, buffer.AsMemory(offset, count), cancellationToken);
+
+    public Task<int> WriteAsync(
+        string comPort,
+        byte[] buffer,
+        CancellationToken cancellationToken = default)
+        => WriteAsync(comPort, buffer.AsMemory(), cancellationToken);
 
     /// <summary>
     /// 异步从指定串口读取数据。
     /// </summary>
     public async Task<int> ReadAsync(
         string comPort,
-        byte[] buffer,
-        int offset,
-        int count,
+        Memory<byte> buffer,
         CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -238,9 +260,23 @@ public class Channel : IDisposable
         if (!port.IsOpen)
             throw new InvalidOperationException($"Port {comPort} is not open.");
 
-        return await port.ReadAsync(buffer.AsMemory(offset, count), cancellationToken)
+        return await port.ReadAsync(buffer, cancellationToken)
                          .ConfigureAwait(false);
     }
+
+    public Task<int> ReadAsync(
+        string comPort,
+        byte[] buffer,
+        int offset,
+        int count,
+        CancellationToken cancellationToken = default)
+        => ReadAsync(comPort, buffer.AsMemory(offset, count), cancellationToken);
+
+    public Task<int> ReadAsync(
+        string comPort,
+        byte[] buffer,
+        CancellationToken cancellationToken = default)
+        => ReadAsync(comPort, buffer.AsMemory(), cancellationToken);
 
     protected virtual void Dispose(bool disposing)
     {
