@@ -122,7 +122,7 @@ public class Channel : IDisposable
     }
 
 #if NET6_0_OR_GREATER
- /// <summary>
+    /// <summary>
     /// 检查串口是否已连接并可用。
     /// </summary>
     /// <param name="port">要检查的串口</param>

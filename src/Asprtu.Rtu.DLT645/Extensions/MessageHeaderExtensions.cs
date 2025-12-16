@@ -5,6 +5,18 @@ namespace Asprtu.Rtu.DLT645.Extensions;
 
 public static class MessageHeaderExtensions
 {
+    public static void EncodeData(Span<byte> data)
+    {
+        for (int i = 0; i < data.Length; i++)
+            data[i] += 0x33;
+    }
+
+    public static void DecodeData(Span<byte> data)
+    {
+        for (int i = 0; i < data.Length; i++)
+            data[i] -= 0x33;
+    }
+
     /// <summary>
     /// 尝试从字节数组中提取完整的 DLT645 帧（处理半包/粘包）
     /// </summary>
