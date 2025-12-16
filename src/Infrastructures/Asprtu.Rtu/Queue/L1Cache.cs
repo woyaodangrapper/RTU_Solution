@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using Asprtu.Rtu.Extensions;
+using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Concurrent;
 using ZiggyCreatures.Caching.Fusion;
 
@@ -20,7 +21,7 @@ public abstract class L1Cache : IDisposable
 
     protected L1Cache(QueueOptions options)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        ThrowHelper.ThrowIfNull(options);
 
         _name = options.Name;
         if (CachePool.TryGetValue(_name, out var cache))
@@ -85,7 +86,7 @@ public abstract class L1Cache : IDisposable
 
     public TItem GetOrAdd<TItem>(object key, TItem factory, int? size = null, TimeSpan? duration = null)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        ThrowHelper.ThrowIfNull(factory);
         var options = _entryOptions;
         if (duration.HasValue)
         {

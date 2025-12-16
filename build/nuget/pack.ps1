@@ -238,7 +238,7 @@ function Invoke-PackProject {
         "-p:RepositoryUrl=https://github.com/woyaodangrapper/RTU_Solution",
         "-p:RepositoryType=git",
         "-p:PackageLicenseExpression=MIT",
-        "-p:PackageIcon="
+        "--no-restore"
     )
     
     if ($Version) {

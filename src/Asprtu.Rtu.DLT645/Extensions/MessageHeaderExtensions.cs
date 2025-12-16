@@ -1,4 +1,5 @@
 ﻿using Asprtu.Rtu.Contracts.DLT645;
+using ThrowHelper = Asprtu.Rtu.Extensions.ThrowHelper;
 
 namespace Asprtu.Rtu.DLT645.Extensions;
 
@@ -13,7 +14,7 @@ public static class MessageHeaderExtensions
     /// <returns>true=成功提取完整帧；false=半包（需要更多数据）或无效帧</returns>
     public static bool TryReadHeader(this byte[] bytes, out MessageHeader? header, out int consumedBytes)
     {
-        ArgumentNullException.ThrowIfNull(bytes);
+        ThrowHelper.ThrowIfNull(bytes);
         return TryReadHeader(bytes.AsSpan(), out header, out consumedBytes);
     }
 
@@ -22,7 +23,7 @@ public static class MessageHeaderExtensions
     /// </summary>
     public static MessageHeader? TryReadHeader(this byte[] bytes)
     {
-        ArgumentNullException.ThrowIfNull(bytes);
+        ThrowHelper.ThrowIfNull(bytes);
         return TryReadHeader(bytes.AsSpan(), out var header, out _) ? header : null;
     }
 

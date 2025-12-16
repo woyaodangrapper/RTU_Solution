@@ -41,7 +41,14 @@ public class SnowflakeId
     // 构造函数，自动根据应用程序 GUID 生成机器 ID
     private SnowflakeId(bool isMicro)
     {
-        _machineId = (isMicro ? Environment.ProcessId.GetHashCode() : GetUniqueMachineId()) & MaxMachineId;
+        static int GetProcessId() =>
+#if NET5_0_OR_GREATER
+             Environment.ProcessId;
+#else
+            System.Diagnostics.Process.GetCurrentProcess().Id;
+#endif
+
+        _machineId = (isMicro ? GetProcessId().GetHashCode() : GetUniqueMachineId()) & MaxMachineId;
 
         if (_machineId < 0 || _machineId > MaxMachineId)
         {
@@ -91,10 +98,7 @@ public class SnowflakeId
     }
 
     // 获取当前时间戳（毫秒级）
-    private static long GetCurrentTimestamp()
-    {
-        return (DateTime.UtcNow.Ticks / 10000) - _epoch;
-    }
+    private static long GetCurrentTimestamp() => (DateTime.UtcNow.Ticks / 10000) - _epoch;
 
     // 如果当前时间戳与上次生成ID的时间相同，则等待下一毫秒
     private static long WaitForNextMillis(long lastTimestamp)

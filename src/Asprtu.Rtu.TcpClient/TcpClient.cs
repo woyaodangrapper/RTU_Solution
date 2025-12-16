@@ -171,7 +171,11 @@ public sealed class TcpClient : Channel, ITcpClient
         {
             if (!Listener.Connected)
             {
+#if NET5_0_OR_GREATER
                 await Listener.ConnectAsync(new IPEndPoint(IPAddress, Port)).ConfigureAwait(false);
+#else
+     await Listener.ConnectAsync(IPAddress, Port).ConfigureAwait(false);
+#endif
             }
             OnSuccess?.Invoke(Listener);
             _tracker.SetState(ConnectionState.Active);

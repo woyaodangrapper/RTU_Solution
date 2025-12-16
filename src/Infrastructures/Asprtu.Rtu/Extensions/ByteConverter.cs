@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using Asprtu.Rtu.Extensions;
+using System.Text;
 
 namespace System;
 
@@ -9,7 +10,7 @@ public static class ByteConverter
     /// </summary>
     public static byte[] GetBytes(object obj)
     {
-        ArgumentNullException.ThrowIfNull(obj);
+        ThrowHelper.ThrowIfNull(obj);
         return obj switch
         {
             int i => BitConverter.GetBytes(i),
@@ -32,7 +33,7 @@ public static class ByteConverter
     /// </summary>
     public static T GetObject<T>(byte[] bytes)
     {
-        ArgumentNullException.ThrowIfNull(bytes);
+        ThrowHelper.ThrowIfNull(bytes);
         bytes = bytes[16..];
         if (typeof(T) == typeof(int)) return (T)(object)BitConverter.ToInt32(bytes, 0);
         if (typeof(T) == typeof(float)) return (T)(object)BitConverter.ToSingle(bytes, 0);

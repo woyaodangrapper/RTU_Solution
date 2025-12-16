@@ -2,7 +2,7 @@
 	<Import Project="version.props" />
 	<PropertyGroup>
 		<!-- 设置目标框架为 .NET 9.0 -->
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFrameworks>net9.0;net10.0;netstandard2.1</TargetFrameworks>
 
 		<!-- 启用最新的 C# 语言功能 -->
 		<LangVersion>preview</LangVersion>
@@ -29,7 +29,7 @@
 		<PackagePrefix>Asprtu</PackagePrefix>
 
 		<!-- 设置包图标 -->
-		<PackageIcon>icon.png</PackageIcon>
+		<PackageIcon></PackageIcon>
 
 		<!-- 设置仓库 URL -->
 		<RepositoryUrl>https://github.com/woyaodangrapper/Asprtu</RepositoryUrl>

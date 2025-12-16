@@ -226,7 +226,25 @@ public sealed class TcpServer : Channel, ITcpServer
             while (!CancellationToken.IsCancellationRequested)
             {
                 var cancellationToken = CancellationToken.Token;
-                var client = await Listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+
+                TcpClient client;
+#if NET5_0_OR_GREATER
+                client = await Listener.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+#else
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var acceptTask = Listener.AcceptTcpClientAsync();
+                var completedTask = await Task.WhenAny(acceptTask, Task.Delay(Timeout.Infinite, cts.Token));
+                if (completedTask == acceptTask)
+                {
+                    cts.Cancel();
+                    client = await acceptTask;
+                }
+                else
+                {
+                    throw new OperationCanceledException(cancellationToken);
+                }
+#endif
+
                 _clients.AddOrUpdate(client.Client.RemoteEndPoint!.ToString()!, client, (key, oldValue) => client);
                 _ = Task.Run(async () => await ReadLoopAsync(client, cancellationToken).ConfigureAwait(false));
             }

@@ -4,9 +4,17 @@ using Asprtu.Rtu.DLT645.Contracts;
 using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using RJCP.IO.Ports;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+
+
+#if NET6_0_OR_GREATER
+    using RJCP.IO.Ports;
+
+#else
+using System.IO.Ports;
+#endif
+using ThrowHelper = Asprtu.Rtu.Extensions.ThrowHelper;
 
 namespace Asprtu.Rtu.DLT645;
 
@@ -17,8 +25,17 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
 
     public Action<Exception>? OnError { get; set; }
-    public Action<SerialPortStream>? OnSuccess { get; set; }
+
+#if NET6_0_OR_GREATER
+      public Action<SerialPortStream>? OnSuccess { get; set; }
     public Action<SerialPortStream, byte[]>? OnMessage { get; set; }
+
+
+#else
+    public Action<SerialPort>? OnSuccess { get; set; }
+    public Action<SerialPort, byte[]>? OnMessage { get; set; }
+
+#endif
 
     public Dlt645Client() : base(new("default"), NullLoggerFactory.Instance)
     {
@@ -44,19 +61,6 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    protected override async Task CreateAsync()
-    {
-        await base.CreateAsync()
-            .ConfigureAwait(false);
-
-        foreach (var item in Ports)
-        {
-            if (item != null && item.IsOpen)
-            {
-                OnSuccess?.Invoke(item);
-            }
-        }
-    }
 
     public IAsyncEnumerable<MessageHeader> TrySendAsync(byte code, byte[] addresses, CancellationToken cancellationToken = default)
     {
@@ -261,13 +265,19 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-
+#if NET6_0_OR_GREATER
     private async IAsyncEnumerable<MessageHeader> ReadLoopAsync(
      SerialPortStream port,
      TimeSpan timeSpan,
      [EnumeratorCancellation] CancellationToken stoppingToken)
+#else
+    private async IAsyncEnumerable<MessageHeader> ReadLoopAsync(
+      SerialPort port,
+      TimeSpan timeSpan,
+      [EnumeratorCancellation] CancellationToken stoppingToken)
+#endif
     {
-        ArgumentNullException.ThrowIfNull(port);
+        ThrowHelper.ThrowIfNull(port);
         byte[] recvBuffer = new byte[1024];
 
         port.ReadTimeout = timeSpan.Milliseconds;

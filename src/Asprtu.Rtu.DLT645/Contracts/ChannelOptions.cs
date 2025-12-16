@@ -1,8 +1,14 @@
 using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using RJCP.IO.Ports;
 using System.Collections.ObjectModel;
+
+#if NET6_0_OR_GREATER
+    using RJCP.IO.Ports;
+#else
+using System.IO.Ports;
+#endif
+using ThrowHelper = Asprtu.Rtu.Extensions.ThrowHelper;
 
 namespace Asprtu.Rtu.DLT645.Contracts;
 
@@ -17,7 +23,7 @@ public sealed class ChannelOptions
     /// <param name="channelName">通道唯一名称</param>
     public ChannelOptions(string channelName)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(channelName, nameof(channelName));
+        ThrowHelper.ThrowIfNullOrWhiteSpace(channelName, nameof(channelName));
         ChannelName = channelName;
     }
 
@@ -104,7 +110,7 @@ public sealed class CreateBuilder
     /// <param name="channelName">通道唯一名称</param>
     public CreateBuilder(string channelName = "MyChannel")
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(channelName, nameof(channelName));
+        ThrowHelper.ThrowIfNullOrWhiteSpace(channelName, nameof(channelName));
         _channelName = channelName;
     }
 
@@ -113,7 +119,7 @@ public sealed class CreateBuilder
     /// </summary>
     public CreateBuilder WithLogger(ILoggerFactory factory)
     {
-        ArgumentNullException.ThrowIfNull(factory);
+        ThrowHelper.ThrowIfNull(factory);
         _loggerFactory = factory;
         return this;
     }
@@ -136,7 +142,7 @@ public sealed class CreateBuilder
     /// <returns>当前构建器实例</returns>
     public CreateBuilder WithChannel(string comPort, params byte[] addresses)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
+        ThrowHelper.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
         _channels.Add(new ComChannel(comPort, addresses));
         return this;
     }
@@ -194,8 +200,8 @@ public sealed class CreateBuilder
     /// <returns>当前构建器实例</returns>
     public CreateBuilder WithChannel(string comPort, string addresses)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
-        ArgumentException.ThrowIfNullOrWhiteSpace(addresses, nameof(addresses));
+        ThrowHelper.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
+        ThrowHelper.ThrowIfNullOrWhiteSpace(addresses, nameof(addresses));
 
         var addressList = AddressFormatExtension.FormatAddresses(addresses);
         foreach (var addr in addressList)
@@ -211,7 +217,7 @@ public sealed class CreateBuilder
     /// <returns>当前构建器实例</returns>
     public CreateBuilder WithChannel(string comPort)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
+        ThrowHelper.ThrowIfNullOrWhiteSpace(comPort, nameof(comPort));
         _channels.Add(new ComChannel(comPort, null));
         return this;
     }
@@ -223,7 +229,7 @@ public sealed class CreateBuilder
     /// <returns>当前构建器实例</returns>
     public CreateBuilder WithTimeout(int milliseconds)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(milliseconds, 100, nameof(milliseconds));
+        ThrowHelper.ThrowIfLessThan(milliseconds, 100, nameof(milliseconds));
         _frameTimeout = new TimeSpan(0, 0, 0, 0, milliseconds);
         return this;
     }
@@ -245,7 +251,7 @@ public sealed class CreateBuilder
     /// <returns>当前构建器实例</returns>
     public CreateBuilder WithRetryCount(int count)
     {
-        ArgumentOutOfRangeException.ThrowIfNegative(count, nameof(count));
+        ThrowHelper.ThrowIfNegative(count, nameof(count));
         _retryCount = count;
         return this;
     }
@@ -258,7 +264,7 @@ public sealed class CreateBuilder
     /// <returns>当前构建器实例。</returns>
     public CreateBuilder WithMaxLength(int maxFrameLength)
     {
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxFrameLength, 1, nameof(maxFrameLength));
+        ThrowHelper.ThrowIfLessThan(maxFrameLength, 1, nameof(maxFrameLength));
         _maxLength = maxFrameLength;
         return this;
     }

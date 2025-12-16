@@ -1,5 +1,4 @@
 ﻿using Asprtu.Rtu.Extensions;
-using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace Asprtu.Rtu.Queue;
@@ -21,8 +20,8 @@ public abstract class QueueCache<T> : L1Cache
     protected QueueCache(QueueOptions options, QueueContext<T> context, ILoggerFactory loggerFactory)
       : base(options)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(context);
+        ThrowHelper.ThrowIfNull(options);
+        ThrowHelper.ThrowIfNull(context);
         _mode = options.Mode;
 
         Queue = context.Queue;

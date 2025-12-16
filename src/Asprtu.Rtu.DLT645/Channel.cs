@@ -1,10 +1,17 @@
 ﻿using Asprtu.Rtu.DLT645.Contracts;
 using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
-using RJCP.IO.Ports;
+
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
+#if NET6_0_OR_GREATER
+using RJCP.IO.Ports;
+#else
+using System.IO.Ports;
+#endif
+
+using ThrowHelper = Asprtu.Rtu.Extensions.ThrowHelper;
 namespace Asprtu.Rtu.DLT645;
 
 /// <summary>
@@ -27,13 +34,22 @@ public class Channel : IDisposable
     /// </summary>
     public string ChannelName => Options.ChannelName;
 
+
+#if NET6_0_OR_GREATER
     /// <summary>
     /// 获取可用串行端口的集合。
     /// </summary>
     /// <remarks>该集合是只读的，反映了当前检测到的串行端口集
     /// 如果在应用程序运行时添加或删除端口，则内容可能会更改。</remarks>
     public Collection<SerialPortStream> Ports { get; } = [];
-
+#else
+    /// <summary>
+    /// 获取可用串行端口的集合。
+    /// </summary>
+    /// <remarks>该集合是只读的，反映了当前检测到的串行端口集
+    /// 如果在应用程序运行时添加或删除端口，则内容可能会更改。</remarks>
+    public Collection<SerialPort> Ports { get; } = [];
+#endif
 
     /// <summary>
     /// 当前通道下所有串口（只读）
@@ -72,53 +88,6 @@ public class Channel : IDisposable
         Buffer = new CircularBuffer(options.MaxLength);
     }
 
-    protected virtual async Task CreateAsync()
-    {
-        // 初始化并打开所有串口
-        foreach (var com in Options.Channels.Distinct())
-        {
-            SerialPortStream port = await SerialPortExtensions.AutoNegotiateAsync(
-                portName: com.Port,
-                timeout: Options.Timeout,
-                Options.Port
-            ).ConfigureAwait(false);
-
-            Ports.Add(port);
-
-            // 立即打开串口
-            try
-            {
-                port.Open();
-                LogPortOpen(_logger, port.PortName, null);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogPortError(_logger, port.PortName, ex);
-                Dispose();
-                throw;
-            }
-            catch (ArgumentException ex)
-            {
-                LogPortError(_logger, port.PortName, ex);
-                Dispose();
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogPortError(_logger, port.PortName, ex);
-                Dispose();
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogPortError(_logger, port.PortName, ex);
-                Dispose();
-                throw;
-            }
-        }
-        LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
-    }
-
 
     // 改为同步方法
     protected virtual void Create()
@@ -126,7 +95,7 @@ public class Channel : IDisposable
         foreach (var com in Options.Channels.Distinct())
         {
             // 同步探测串口
-            SerialPortStream port = SerialPortExtensions.AutoNegotiate(
+            var port = SerialPortExtensions.AutoNegotiate(
                 portName: com.Port,
                 timeout: Options.Timeout,
                 Options.Port
@@ -151,14 +120,25 @@ public class Channel : IDisposable
         }
         LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
     }
-    /// <summary>
+
+#if NET6_0_OR_GREATER
+ /// <summary>
     /// 检查串口是否已连接并可用。
     /// </summary>
     /// <param name="port">要检查的串口</param>
     /// <returns>如果串口已打开且可用则返回 true；否则返回 false</returns>
     protected virtual bool IsConnected([NotNull] SerialPortStream port)
+#else
+    /// <summary>
+    /// 检查串口是否已连接并可用。
+    /// </summary>
+    /// <param name="port">要检查的串口</param>
+    /// <returns>如果串口已打开且可用则返回 true；否则返回 false</returns>
+    protected virtual bool IsConnected([NotNull] SerialPort port)
+#endif
+
     {
-        ArgumentNullException.ThrowIfNull(port);
+        ThrowHelper.ThrowIfNull(port);
 
         // 检查串口是否打开
         if (!port.IsOpen)
@@ -182,7 +162,7 @@ public class Channel : IDisposable
     }
     public bool IsPortsConnected()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIf(_disposed, this);
         return Ports.All(IsConnected);
     }
     /// <summary>
@@ -190,7 +170,7 @@ public class Channel : IDisposable
     /// </summary>
     public int Write(string comPort, ReadOnlySpan<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIf(_disposed, this);
 
         var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
                    ?? throw new InvalidOperationException($"Port {comPort} not found.");
@@ -219,7 +199,7 @@ public class Channel : IDisposable
     /// </summary>
     public int Read(string comPort, Span<byte> buffer)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIf(_disposed, this);
 
         var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
                    ?? throw new InvalidOperationException($"Port {comPort} not found.");
@@ -242,7 +222,7 @@ public class Channel : IDisposable
         ReadOnlyMemory<byte> buffer,
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIf(_disposed, this);
 
         var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
                    ?? throw new InvalidOperationException($"Port {comPort} not found.");
@@ -285,7 +265,7 @@ public class Channel : IDisposable
         Memory<byte> buffer,
         CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        ThrowHelper.ThrowIf(_disposed, this);
 
         var port = Ports.FirstOrDefault(p => p.PortName.Equals(comPort, StringComparison.OrdinalIgnoreCase))
                    ?? throw new InvalidOperationException($"Port {comPort} not found.");

@@ -58,7 +58,11 @@ public abstract class Channel : IDisposable
             if (disposing)
             {
                 // Dispose managed resources
+#if NET6_0_OR_GREATER
                 Listener.Dispose();
+#else
+Listener.Stop();
+#endif
                 CancellationToken.Dispose();
             }
 

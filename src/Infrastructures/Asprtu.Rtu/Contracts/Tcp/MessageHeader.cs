@@ -1,6 +1,7 @@
 ﻿// 我们依赖此结构体的总大小为 16 位。
 // 如果你改变结构体的大小，代码中的许多假设将不再有效。
 // 这里我们明确指定结构体的大小为 16 字节，并保证字段的通信布局。
+using Asprtu.Rtu.Extensions;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
@@ -55,7 +56,7 @@ public struct MessageHeader : IEquatable<MessageHeader>
 
     public MessageHeader(Func<int, int> totalLengthProvider)
     {
-        ArgumentNullException.ThrowIfNull(totalLengthProvider);
+        ThrowHelper.ThrowIfNull(totalLengthProvider);
         TotalLength = (uint)totalLengthProvider(Marshal.SizeOf<MessageHeader>());
     }
 
@@ -122,20 +123,11 @@ public struct MessageHeader : IEquatable<MessageHeader>
                SequenceId == other.SequenceId;
     }
 
-    public override readonly int GetHashCode()
-    {
-        return HashCode.Combine(Version, Reserved, TotalLength, CommandId, SequenceId);
-    }
+    public override readonly int GetHashCode() => HashCode.Combine(Version, Reserved, TotalLength, CommandId, SequenceId);
 
-    public static bool operator ==(MessageHeader left, MessageHeader right)
-    {
-        return left.Equals(right);
-    }
+    public static bool operator ==(MessageHeader left, MessageHeader right) => left.Equals(right);
 
-    public static bool operator !=(MessageHeader left, MessageHeader right)
-    {
-        return !(left == right);
-    }
+    public static bool operator !=(MessageHeader left, MessageHeader right) => !(left == right);
 }
 
 // 4 - 7 <未用>  4B   保留间隙

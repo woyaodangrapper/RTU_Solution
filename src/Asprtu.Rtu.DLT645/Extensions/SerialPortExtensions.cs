@@ -1,11 +1,14 @@
 ﻿using Asprtu.Rtu.Contracts.DLT645;
 using Asprtu.Rtu.DLT645.Contracts;
-using RJCP.IO.Ports;
 using System.Buffers;
-
+#if NET6_0_OR_GREATER
+using RJCP.IO.Ports;
+#else
+using System.IO.Ports;
+#endif
 namespace Asprtu.Rtu.DLT645.Extensions;
 
-internal class SerialPortExtensions
+internal static class SerialPortExtensions
 {
     /// <summary>
     /// 配置一组DLT645串口常用的奇偶校验、波特率、数据位、
@@ -28,92 +31,17 @@ internal class SerialPortExtensions
         // 7E1 @ 9600
         (Parity.Even, 9600, 7, StopBits.One),
     ];
+
+#if NET6_0_OR_GREATER
+
     /// <summary>
     /// 自动探测串口是否能正常与 DLT645 从机通讯
     /// </summary>
-    public static async Task<SerialPortStream> AutoNegotiateAsync(
-        string portName,
-        TimeSpan timeout,
-        ComOptions options,
-        CancellationToken cancellation = default)
-    {
-        if (!options.Auto)
-        {
-            return new(portName, options.BaudRate, options.DataBits, options.Parity, options.StopBits)
-            {
-                ReadTimeout = (int)timeout.TotalMilliseconds,
-                WriteTimeout = (int)timeout.TotalMilliseconds
-            };
-        }
-
-        // 广播帧
-        MessageHeader messageHeader = new(
-           address: [.. Enumerable.Repeat((byte)0xAA, 6)],
-           control: ((byte)Command.Code.ReadAddress),
-           bytes: []
-        );
-
-        byte[] messageBytes = messageHeader.ToBytes();
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(32); // 足够大
-        try
-        {
-            foreach (var (parity, baud, databits, stopBits) in _candidates)
-            {
-                using SerialPortStream port = new(portName, baud, databits, parity, stopBits)
-                {
-                    ReadTimeout = (int)timeout.TotalMilliseconds,
-                    WriteTimeout = (int)timeout.TotalMilliseconds
-                };
-                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-                cts.CancelAfter(timeout);
-
-                try
-                {
-                    port.Open();
-                    await port.FlushAsync(cts.Token).ConfigureAwait(false);
-                    await port.WriteAsync(messageBytes, cts.Token).ConfigureAwait(false);
-                    int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
-
-                    if (IsValid(buffer.AsSpan(0, read)))
-                    {
-                        // 成功匹配，归还 buffer 后返回
-                        var result = ClonePort(port);
-                        ArrayPool<byte>.Shared.Return(buffer);
-                        return result;
-                    }
-                }
-                catch (IOException)
-                {
-                    // 忽略错误继续试
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // 忽略错误继续试
-                }
-                catch (OperationCanceledException)
-                {
-                    // 可以安全捕获超时或取消
-                }
-                catch (TimeoutException)
-                {
-                    // 忽略错误继续试
-                }
-                finally
-                {
-                    port.Close(); // 释放底层缓冲区，终止所有
-                }
-            }
-
-            throw new InvalidOperationException($"无法与设备建立 DLT645 通讯（端口：{portName}）。");
-        }
-        finally
-        {
-            // 确保 buffer 总是被归还
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    // 同步版本
+    /// <param name="portName"></param>
+    /// <param name="timeout"></param>
+    /// <param name="options"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public static SerialPortStream AutoNegotiate(
         string portName,
         TimeSpan timeout,
@@ -189,6 +117,128 @@ internal class SerialPortExtensions
             ReadTimeout = p.ReadTimeout,
             WriteTimeout = p.WriteTimeout
         };
+#else
+    public static SerialPort AutoNegotiate(string portName, TimeSpan timeout, ComOptions options)
+    {
+        if (!options.Auto)
+        {
+            return new SerialPort(portName, options.BaudRate, options.Parity, options.DataBits, options.StopBits)
+            {
+                ReadTimeout = (int)timeout.TotalMilliseconds,
+                WriteTimeout = (int)timeout.TotalMilliseconds
+            };
+        }
+
+        MessageHeader messageHeader = new(
+            address: [.. Enumerable.Repeat((byte)0xAA, 6)],
+            control: (byte)Command.Code.ReadAddress,
+            bytes: []
+        );
+
+        byte[] messageBytes = messageHeader.ToBytes();
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(32);
+
+        try
+        {
+            foreach (var (parity, baud, databits, stopBits) in _candidates)
+            {
+                using var port = new SerialPort(portName, baud, parity, databits, stopBits)
+                {
+                    ReadTimeout = (int)timeout.TotalMilliseconds,
+                    WriteTimeout = (int)timeout.TotalMilliseconds
+                };
+
+                try
+                {
+                    port.Open();
+                    port.DiscardInBuffer();
+                    port.DiscardOutBuffer();
+                    port.Write(messageBytes, 0, messageBytes.Length);
+
+                    int read = port.Read(buffer, 0, buffer.Length);
+
+                    if (IsValid(buffer.AsSpan(0, read)))
+                    {
+                        var result = ClonePort(port);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        return result;
+                    }
+                }
+                catch (Exception ex) when (ex is IOException
+                                           or UnauthorizedAccessException
+                                           or TimeoutException)
+                {
+                    // 忽略并尝试下一个组合
+                }
+                finally
+                {
+                    if (port.IsOpen)
+                        port.Close();
+                }
+            }
+
+            throw new InvalidOperationException($"无法与设备建立 DLT645 通讯(端口:{portName})。");
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+    private static SerialPort ClonePort(SerialPort p)
+    => new(p.PortName, p.BaudRate, p.Parity, p.DataBits, p.StopBits)
+    {
+        ReadTimeout = p.ReadTimeout,
+        WriteTimeout = p.WriteTimeout
+    };
+
+
+
+    public static int Read(this SerialPort port, Span<byte> buffer)
+    {
+        if (port == null) throw new ArgumentNullException(nameof(port));
+        if (!port.IsOpen) throw new InvalidOperationException("Port is not open");
+
+        byte[] temp = new byte[buffer.Length];
+        int read = port.Read(temp, 0, temp.Length);
+        temp.AsSpan(0, read).CopyTo(buffer);
+        return read;
+    }
+
+
+    public static void Write(this SerialPort port, ReadOnlySpan<byte> buffer)
+    {
+        if (port == null) throw new ArgumentNullException(nameof(port));
+        if (!port.IsOpen) throw new InvalidOperationException("Port is not open");
+
+        byte[] temp = buffer.ToArray();
+        port.Write(temp, 0, temp.Length);
+    }
+
+
+    public static async Task<int> ReadAsync(this SerialPort port, Memory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        if (port == null) throw new ArgumentNullException(nameof(port));
+        if (!port.IsOpen) throw new InvalidOperationException("Port is not open");
+
+        return await port.BaseStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+    }
+
+
+    public static async Task WriteAsync(this SerialPort port, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+    {
+        if (port == null) throw new ArgumentNullException(nameof(port));
+        if (!port.IsOpen) throw new InvalidOperationException("Port is not open");
+
+        await port.BaseStream.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// 异步刷新串口缓冲区（空实现，仅兼容 API）
+    /// </summary>
+    public static Task FlushAsync(this SerialPort port, CancellationToken cancellationToken = default) => Task.CompletedTask;
+#endif
+
+
 
     /// <summary>
     /// 判断 68 起始 + CS 校验是否正确
