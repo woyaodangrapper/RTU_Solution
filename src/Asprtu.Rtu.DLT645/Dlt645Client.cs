@@ -7,9 +7,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
+using Asprtu.Rtu.DLT645.Serialization;
 
 #if NET6_0_OR_GREATER
-    using RJCP.IO.Ports;
+using RJCP.IO.Ports;
 
 #else
 using System.IO.Ports;
@@ -27,7 +28,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     public Action<Exception>? OnError { get; set; }
 
 #if NET6_0_OR_GREATER
-      public Action<SerialPortStream>? OnSuccess { get; set; }
+    public Action<SerialPortStream>? OnSuccess { get; set; }
     public Action<SerialPortStream, byte[]>? OnMessage { get; set; }
 
 

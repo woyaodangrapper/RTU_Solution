@@ -1,4 +1,4 @@
-﻿namespace Asprtu.Rtu.DLT645.Contracts;
+﻿namespace Asprtu.Rtu.DLT645.Serialization;
 
 [AttributeUsage(AttributeTargets.Enum)]
 public sealed class EnumCommandAttribute : Attribute { }

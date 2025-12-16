@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Asprtu.Rtu.DLT645.Contracts;
+using Asprtu.Rtu.DLT645.Serialization;
 using Microsoft.Extensions.Logging;
 
 
@@ -25,7 +26,7 @@ var channel = new CreateBuilder("MyChannel")
 
 await foreach (var frame in channel.TrySendAsync(Command.EnergyData.None, "11-11-00-00-00-00"))
 {
-    Console.WriteLine($"{BitConverter.ToString(frame.Address)}");
+    Console.WriteLine($"{BitConverter.ToString(frame.ToBytes())}");
 }
 
 Console.WriteLine("Hello, World!");

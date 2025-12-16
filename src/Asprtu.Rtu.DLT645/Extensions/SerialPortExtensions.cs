@@ -1,6 +1,8 @@
 ﻿using Asprtu.Rtu.Contracts.DLT645;
 using Asprtu.Rtu.DLT645.Contracts;
+using Asprtu.Rtu.DLT645.Serialization;
 using System.Buffers;
+
 #if NET6_0_OR_GREATER
 using RJCP.IO.Ports;
 #else
