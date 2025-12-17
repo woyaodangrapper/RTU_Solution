@@ -168,7 +168,7 @@ public class Channel : IDisposable
     /// <summary>
     /// 写入数据到指定串口。
     /// </summary>
-    public int Write(string comPort, ReadOnlySpan<byte> buffer)
+    public int Write(string comPort, Span<byte> buffer)
     {
         ThrowHelper.ThrowIf(_disposed, this);
 
@@ -183,6 +183,9 @@ public class Channel : IDisposable
 
         // 清除输出缓冲区（可选，但推荐）
         port.DiscardOutBuffer();
+
+        buffer.TryGetData(out Span<byte> data);
+        MessageHeaderExtensions.EncodeData(data);
 
         port.Write(buffer);
         return buffer.Length;
@@ -219,7 +222,7 @@ public class Channel : IDisposable
     /// </summary>
     public async Task<int> WriteAsync(
         string comPort,
-        ReadOnlyMemory<byte> buffer,
+        Memory<byte> buffer,
         CancellationToken cancellationToken = default)
     {
         ThrowHelper.ThrowIf(_disposed, this);
@@ -236,8 +239,11 @@ public class Channel : IDisposable
         // 清除输出缓冲区
         port.DiscardOutBuffer();
 
-        await port.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
+        // 编码数据
+        if (buffer.TryGetData(out Memory<byte> data))
+            MessageHeaderExtensions.EncodeData(data.Span);
 
+        await port.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         await port.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         return buffer.Length;

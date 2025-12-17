@@ -74,7 +74,7 @@ public interface IDlt645Client : IContracts
     /// <param name="cancellationToken">用于取消操作的令牌。</param>
     /// <returns>返回接收到的响应消息头的异步枚举序列。</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IAsyncEnumerable<MessageHeader> TryWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
+    IAsyncEnumerable<MessageHeader> TryWriteAsync(Memory<byte> buffer, CancellationToken cancellationToken);
 
 
     /// <summary>
@@ -82,7 +82,7 @@ public interface IDlt645Client : IContracts
     /// </summary>
     int Write(string comPort, byte[] buffer);
     int Write(string comPort, byte[] buffer, int offset, int count);
-    int Write(string comPort, ReadOnlySpan<byte> buffer);
+    int Write(string comPort, Span<byte> buffer);
 
     /// <summary>
     /// 同步从指定串口读取数据
@@ -96,7 +96,7 @@ public interface IDlt645Client : IContracts
     /// </summary>
     Task<int> WriteAsync(string comPort, byte[] buffer, CancellationToken cancellationToken = default);
     Task<int> WriteAsync(string comPort, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
-    Task<int> WriteAsync(string comPort, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default);
+    Task<int> WriteAsync(string comPort, Memory<byte> buffer, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 异步从指定串口读取数据

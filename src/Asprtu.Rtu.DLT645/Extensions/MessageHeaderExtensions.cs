@@ -3,14 +3,22 @@ using ThrowHelper = Asprtu.Rtu.Extensions.ThrowHelper;
 
 namespace Asprtu.Rtu.DLT645.Extensions;
 
-public static class MessageHeaderExtensions
+internal static class MessageHeaderExtensions
 {
+    /// <summary>
+    /// +0x33
+    /// </summary>
+    /// <param name="data"></param>
     public static void EncodeData(Span<byte> data)
     {
         for (int i = 0; i < data.Length; i++)
             data[i] += 0x33;
     }
 
+    /// <summary>
+    /// -0x33
+    /// </summary>
+    /// <param name="data"></param>
     public static void DecodeData(Span<byte> data)
     {
         for (int i = 0; i < data.Length; i++)
@@ -23,7 +31,7 @@ public static class MessageHeaderExtensions
     /// <param name="bytes">待解析的字节数组</param>
     /// <param name="header">输出解析出的帧头</param>
     /// <param name="consumedBytes">输出已消费的字节数（用于粘包处理）</param>
-    /// <returns>true=成功提取完整帧；false=半包（需要更多数据）或无效帧</returns>
+    /// <returns>帧结构是否无效</returns>
     public static bool TryReadHeader(this byte[] bytes, out MessageHeader? header, out int consumedBytes)
     {
         ThrowHelper.ThrowIfNull(bytes);
@@ -45,7 +53,7 @@ public static class MessageHeaderExtensions
     /// <param name="span">待解析的字节序列</param>
     /// <param name="header">输出解析出的帧头</param>
     /// <param name="consumedBytes">输出已消费的字节数（包含前导 FE 和完整帧）</param>
-    /// <returns>true=成功提取完整帧；false=半包或无效帧</returns>
+    /// <returns>帧结构是否无效</returns>
     public static bool TryReadHeader(this ReadOnlySpan<byte> span, out MessageHeader? header, out int consumedBytes)
     {
         header = null;
@@ -109,6 +117,101 @@ public static class MessageHeaderExtensions
             consumedBytes = offset + 1;
             return false;
         }
+    }
+
+    /// <summary>
+    /// 快速从字节序列中提取 DLT645 数据域（不对整个帧验证）
+    /// </summary>
+    /// <param name="bytes">包含完整 DLT645 帧的字节数组</param>
+    /// <param name="data">输出数据域</param>
+    /// <returns>帧结构是否无效</returns>
+    public static bool TryGetData(this byte[] bytes, out byte[] data)
+    {
+        ThrowHelper.ThrowIfNull(bytes);
+        bool valid = TryGetData(bytes.AsSpan(), out var span);
+        data = valid ? span.ToArray() : [];
+        return valid;
+    }
+
+    /// <summary>
+    /// 快速从字节序列中提取 DLT645 数据域
+    /// </summary>
+    /// <param name="span">包含完整 DLT645 帧的字节序列</param>
+    /// <param name="data">输出数据域</param>
+    /// <returns>帧结构是否无效</returns>
+    public static bool TryGetData(this Span<byte> span, out Span<byte> data)
+    {
+        data = default;
+
+        int startCodeIndex = 0;
+        while (startCodeIndex < span.Length && span[startCodeIndex] == 0xFE)
+            startCodeIndex++;
+
+        if (span.Length - startCodeIndex < 12)
+            return false;
+
+        if (span[startCodeIndex] != 0x68)
+            return false;
+
+        if (span[startCodeIndex + 7] != 0x68)
+            return false;
+
+        byte dataLength = span[startCodeIndex + 9];
+
+        int totalFrameLength = 12 + dataLength;
+        if (span.Length - startCodeIndex < totalFrameLength)
+            return false;
+
+        // 验证结束码
+        if (span[startCodeIndex + totalFrameLength - 1] != 0x16)
+            return false;
+
+        // 提取数据域
+        int dataStartIndex = startCodeIndex + 10;
+        data = span.Slice(dataStartIndex, dataLength);
+
+        return true;
+    }
+
+    /// <summary>
+    /// 快速从 Memory 中提取 DLT645 数据域
+    /// </summary>
+    /// <param name="memory">包含完整 DLT645 帧的内存</param>
+    /// <param name="data">输出数据域</param>
+    /// <returns>帧结构是否无效</returns>
+    public static bool TryGetData(this Memory<byte> memory, out Memory<byte> data)
+    {
+        data = default;
+        Span<byte> span = memory.Span;
+
+        int startCodeIndex = 0;
+        while (startCodeIndex < span.Length && span[startCodeIndex] == 0xFE)
+            startCodeIndex++;
+
+        if (span.Length - startCodeIndex < 12)
+            return false;
+
+        if (span[startCodeIndex] != 0x68)
+            return false;
+
+        if (span[startCodeIndex + 7] != 0x68)
+            return false;
+
+        byte dataLength = span[startCodeIndex + 9];
+
+        int totalFrameLength = 12 + dataLength;
+        if (span.Length - startCodeIndex < totalFrameLength)
+            return false;
+
+        // 验证结束码
+        if (span[startCodeIndex + totalFrameLength - 1] != 0x16)
+            return false;
+
+        // 提取数据域
+        int dataStartIndex = startCodeIndex + 10;
+        data = memory.Slice(dataStartIndex, dataLength);
+
+        return true;
     }
 
 }

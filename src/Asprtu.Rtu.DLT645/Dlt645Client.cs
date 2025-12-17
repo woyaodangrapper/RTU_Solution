@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 
 using Asprtu.Rtu.DLT645.Serialization;
 
+
 #if NET6_0_OR_GREATER
 using RJCP.IO.Ports;
 
@@ -139,7 +140,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    public async IAsyncEnumerable<MessageHeader> TryWriteAsync(ReadOnlyMemory<byte> buffer,
+    public async IAsyncEnumerable<MessageHeader> TryWriteAsync(Memory<byte> buffer,
     [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!IsPortsConnected())
@@ -394,6 +395,13 @@ public sealed class Dlt645Client : Channel, IDlt645Client
                 return false;
             }
             frame = Buffer.Read(total);
+
+            // 解析数据区
+            if (frame.TryGetData(out byte[] data))
+            {
+                MessageHeaderExtensions.DecodeData(data);
+            }
+
             return true;
         }
         catch (ArgumentOutOfRangeException ex)
