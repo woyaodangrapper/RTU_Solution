@@ -5,7 +5,8 @@ namespace Asprtu.Rtu.DLT645.Serialization;
 
 public class DataDecoder : IDataDecoder
 {
-    public object Decode(ReadOnlySpan<byte> data, [NotNull] DataFormat format)
+
+    public SemanticValue Decode(ReadOnlySpan<byte> data, [NotNull] DataFormat format)
     {
         return format.Encoding switch
         {
@@ -13,15 +14,25 @@ public class DataDecoder : IDataDecoder
             _ => throw new NotSupportedException($"不支持的编码类型 {format.Encoding}")
         };
     }
-    private static double DecodeBcd(ReadOnlySpan<byte> data, DataFormat format)
+
+    public T Decode<T>(ReadOnlySpan<byte> data, [NotNull] DataFormat format)
+        where T : SemanticValue
+    {
+        return format.Encoding switch
+        {
+            DataFormats.ValueEncoding.Bcd => (T)(SemanticValue)DecodeBcd(data, format),
+            _ => throw new NotSupportedException($"不支持的编码类型 {format.Encoding}")
+        };
+    }
+    private static NumericValue DecodeBcd(ReadOnlySpan<byte> data, DataFormat format)
     {
         if (data.IsEmpty)
             throw new ArgumentException("Data cannot be null or empty", nameof(data));
 
-        int decimalPlaces = ParseDecimalPlaces(format.Format);
+        int decimalPlaces = DecimalPlaces(format.Format);
 
         long value = 0;
-        for (int i = data.Length - 1; i >= 0; i--) // 逐位表示十进制数
+        for (int i = data.Length - 1; i >= 0; i--)
         {
             byte high = (byte)((data[i] >> 4) & 0x0F);
             byte low = (byte)(data[i] & 0x0F);
@@ -32,17 +43,16 @@ public class DataDecoder : IDataDecoder
             value = value * 100 + high * 10 + low;
         }
 
-        if (decimalPlaces > 0)
-        {
-            double divisor = Math.Pow(10, decimalPlaces);
-            return value / divisor;
-        }
+        decimal actualValue = decimalPlaces > 0
+            ? value / (decimal)Math.Pow(10, decimalPlaces)
+            : value;
 
-        return value;
+        return new(actualValue, format.Unit);
     }
 
+
     // 从格式字符串解析小数位
-    private static int ParseDecimalPlaces(string format)
+    private static int DecimalPlaces(string format)
     {
         int dotIndex = format.IndexOf('.', StringComparison.Ordinal);
         if (dotIndex < 0)

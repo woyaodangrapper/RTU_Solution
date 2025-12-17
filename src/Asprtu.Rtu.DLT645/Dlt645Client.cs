@@ -4,11 +4,10 @@ using Asprtu.Rtu.DLT645.Contracts;
 using Asprtu.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 using Asprtu.Rtu.DLT645.Serialization;
-
+using System.Diagnostics.CodeAnalysis;
 
 #if NET6_0_OR_GREATER
 using RJCP.IO.Ports;
@@ -25,6 +24,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 {
     private readonly ILogger<Dlt645Client> _logger;
 
+    private readonly DataDecoder _decoder = new();
 
     public Action<Exception>? OnError { get; set; }
 
@@ -64,56 +64,72 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     }
 
 
-    public IAsyncEnumerable<MessageHeader> TrySendAsync(byte code, byte[] addresses, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<SemanticValue> TrySendAsync(byte code, byte[] addresses, byte[]? data = null,
+         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         MessageHeader messageHeader = new(
            address: addresses,
            control: code,
-           bytes: []
+           bytes: data
         );
+        DataFormats.TryGet(code, out var def);
 
         var length = messageHeader.ToBytes(out var messageBytes);
-        return TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken);
-    }
-
-    public IAsyncEnumerable<MessageHeader> TrySendAsync<T>(T command, byte[] addresses, CancellationToken cancellationToken = default)
-        where T : Enum
-    {
-        var type = typeof(T);
-        if (Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
-            return TrySendAsync(Convert.ToByte(command), addresses, cancellationToken);
-        return EmptyAsync();
-    }
-    public async IAsyncEnumerable<MessageHeader> TrySendAsync<T>(T command, string addresses,
-         [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var type = typeof(T);
-        if (!type.IsEnum || !Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
+        await foreach (var item in TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken)
+            .ConfigureAwait(false))
         {
-            yield break; // 不支持的命令类型，返回空序列
-        }
-        var messages = AddressFormatExtension.FormatAddresses(addresses)
-            .Select(addr => new MessageHeader(
-                address: addr,
-                control: Convert.ToByte(command),
-                bytes: []
-            ));
-        await foreach (var header in TrySendAsync(messages, cancellationToken)
-          .WithCancellation(cancellationToken)
-          .ConfigureAwait(false))
-        {
-            yield return header;
+            yield return _decoder.Decode(item.ToBytes(), def!);
         }
     }
 
-    public async IAsyncEnumerable<MessageHeader> TrySendAsync([NotNull] IEnumerable<MessageHeader> messages,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<T> TrySendAsync<T>(byte code, byte[] addresses, byte[]? data = null,
+         [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : SemanticValue
+    {
+        MessageHeader messageHeader = new(
+            address: addresses,
+            control: code,
+            bytes: data
+        );
+        DataFormats.TryGet(code, out var def);
+
+        ThrowHelper.ThrowIfNull(def);
+
+        var length = messageHeader.ToBytes(out var messageBytes);
+        await foreach (var item in TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken)
+            .ConfigureAwait(false))
+        {
+            yield return _decoder.Decode<T>(item.ToBytes(), def!);
+        }
+    }
+
+    public async IAsyncEnumerable<T> TrySendAsync<T>(MessageHeader messageHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        where T : SemanticValue
+    {
+        DataFormats.TryGet(messageHeader.Code, out var def);
+
+        ThrowHelper.ThrowIfNull(def);
+
+        var length = messageHeader.ToBytes(out var messageBytes);
+        await foreach (var item in TryWriteAsync(messageBytes, cancellationToken)
+            .ConfigureAwait(false))
+        {
+            yield return _decoder.Decode<T>(item.ToBytes(), def!);
+        }
+    }
+
+    public async IAsyncEnumerable<T> TrySendAsync<T>([NotNull] IEnumerable<MessageHeader> messages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        where T : SemanticValue
     {
         foreach (var message in messages)
         {
             await Task.Delay(35, cancellationToken)
                 .ConfigureAwait(true); // 遵循 DL/T 645 协议的最小帧间隔时间 30ms，加一点余量
-            await foreach (var header in TrySendAsync(message, cancellationToken)
+
+            DataFormats.TryGet(message.Code, out var def);
+
+            ThrowHelper.ThrowIfNull(def);
+
+            await foreach (var header in TrySendAsync<T>(message, cancellationToken)
             .WithCancellation(cancellationToken)
             .ConfigureAwait(false))
             {
@@ -122,13 +138,14 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-
-    public IAsyncEnumerable<MessageHeader> TrySendAsync(MessageHeader message, CancellationToken cancellationToken = default)
-        => TryWriteAsync(message.ToBytes(), cancellationToken);
-
-    public IAsyncEnumerable<MessageHeader> TrySendAsync<T>([NotNull] T data, CancellationToken cancellationToken = default)
-        where T : AbstractMessage, new()
-        => TryWriteAsync(data.Serialize(), cancellationToken);
+    public IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
+        where T : Enum
+    {
+        var type = typeof(T);
+        if (Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
+            return TrySendAsync(Convert.ToByte(command), addresses, data, cancellationToken);
+        return EmptyAsync<SemanticValue>();
+    }
 
     public async IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes,
     [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -189,8 +206,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         // 广播帧
         MessageHeader messageHeader = new(
            address: [.. Enumerable.Repeat((byte)0xAA, 6)],
-           control: ((byte)Command.Code.ReadAddress),
-           bytes: []
+           control: ((byte)Command.Code.ReadAddress)
         );
 
         int length = messageHeader.ToBytes(out var bytes);
@@ -329,7 +345,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    private static async IAsyncEnumerable<MessageHeader> EmptyAsync()
+    private static async IAsyncEnumerable<T> EmptyAsync<T>()
     {
         yield break;
     }

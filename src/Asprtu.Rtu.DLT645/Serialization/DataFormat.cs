@@ -2,6 +2,9 @@
 
 namespace Asprtu.Rtu.DLT645.Serialization;
 
+public abstract record SemanticValue;
+public sealed record NumericValue(decimal Value, string Unit) : SemanticValue;
+
 public sealed record DataFormat(
  string Name,
  string Unit,
@@ -15,11 +18,7 @@ public static class DataFormats
     public enum ValueEncoding
     {
         Bcd,
-        SignedBcd,
-        Binary,
-        StatusWord,
-        DateTime,
-        Custom
+        DateTime
     }
     private static readonly Dictionary<uint, DataFormat> _map
             = new()

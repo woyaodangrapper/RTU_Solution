@@ -31,7 +31,7 @@ public struct MessageHeader : IEquatable<MessageHeader>
     public byte Checksum;
     public byte EndCode;
 
-    public MessageHeader(byte[] address, byte control, byte[]? bytes, byte[]? preamble = null)
+    public MessageHeader(byte[] address, byte control, byte[]? bytes = null, byte[]? preamble = null)
     {
         this = default;
         Preamble = preamble ?? [0xFE, 0xFE];

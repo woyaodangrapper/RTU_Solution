@@ -10,5 +10,7 @@ public interface IDataDecoder
     /// <param name="data">原始数据域</param>
     /// <param name="format">数据格式信息</param>
     /// <returns>解码后的对象（可以是 double、int 或自定义类型）</returns>
-    object Decode(ReadOnlySpan<byte> data, DataFormat format);
+    SemanticValue Decode(ReadOnlySpan<byte> data, DataFormat format);
+
+    T Decode<T>(ReadOnlySpan<byte> data, DataFormat format) where T : SemanticValue;
 }

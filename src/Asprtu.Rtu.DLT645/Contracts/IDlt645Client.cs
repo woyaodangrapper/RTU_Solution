@@ -1,108 +1,118 @@
 using Asprtu.Rtu.Contracts;
 using Asprtu.Rtu.Contracts.DLT645;
+using Asprtu.Rtu.DLT645.Serialization;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 
 namespace Asprtu.Rtu.DLT645.Contracts;
 
 /// <summary>
-/// ¶¨Òå DLT645 Ğ­Òé¿Í»§¶ËµÄÍ¨ĞÅÆõÔ¼¡£
-/// Ìá¹©ÓÃÓÚÓë·ûºÏ DLT645 ±ê×¼µÄÉè±¸½øĞĞÍ¨ĞÅµÄ·½·¨£¬Ö§³Ö·¢ËÍºÍ½ÓÊÕÏûÏ¢¡£
+/// å®šä¹‰ DLT645 åè®®å®¢æˆ·ç«¯çš„é€šç”¨å¥‘çº¦ã€‚
+/// æä¾›ç¬¦åˆå›½æ ‡ DLT645 æ ‡å‡†çš„è®¾å¤‡è¿›è¡Œé€šè®¯çš„æ–¹æ³•ï¼Œæ”¯æŒå‘é€å’Œæ¥æ”¶æ¶ˆæ¯ã€‚
 /// </summary>
 public interface IDlt645Client : IContracts
 {
-
     /// <summary>
-    /// Òì²½·¢ËÍ DLT645 ÃüÁîµ½Ö¸¶¨µØÖ·ÁĞ±í¡£
+    /// å¼‚æ­¥å‘é€ DLT645 å‘½ä»¤å¹¶è¿”å›è¯­ä¹‰å€¼
     /// </summary>
-    /// <typeparam name="T">ÃüÁîÃ¶¾ÙÀàĞÍ¡£</typeparam>
-    /// <param name="command">Òª·¢ËÍµÄÃüÁîÖµ¡£</param>
-    /// <param name="addresses">µç±íµØÖ·×Ö·û´®£¬¿É°üº¬¶à¸öµØÖ·¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»ØÃ¿´Î·¢ËÍ½á¹ûµÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    IAsyncEnumerable<MessageHeader> TrySendAsync<T>(T command, string addresses, CancellationToken cancellationToken);
-
+    /// <param name="code">æ§åˆ¶ç </param>
+    /// <param name="addresses">è®¾å¤‡åœ°å€ï¼ˆ6 å­—èŠ‚ï¼‰</param>
+    /// <param name="data">å¯é€‰æ•°æ®åŸŸ</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›è§£æåçš„è¯­ä¹‰å€¼åºåˆ—</returns>
+    IAsyncEnumerable<SemanticValue> TrySendAsync(byte code, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Òì²½Ë³Ğò·¢ËÍÒ»×é DLT645 ÏûÏ¢Ö¡¡£
+    /// å¼‚æ­¥å‘é€ DLT645 å‘½ä»¤å¹¶è¿”å›æŒ‡å®šç±»å‹çš„è¯­ä¹‰å€¼
     /// </summary>
-    /// <param name="messages">Òª·¢ËÍµÄÏûÏ¢Ö¡¼¯ºÏ¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»ØÃ¿ÌõÏûÏ¢·¢ËÍ½á¹ûµÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    IAsyncEnumerable<MessageHeader> TrySendAsync([NotNull] IEnumerable<MessageHeader> messages, CancellationToken cancellationToken);
+    /// <typeparam name="T">è¯­ä¹‰å€¼ç±»å‹</typeparam>
+    /// <param name="code">æ§åˆ¶ç </param>
+    /// <param name="addresses">è®¾å¤‡åœ°å€ï¼ˆ6 å­—èŠ‚ï¼‰</param>
+    /// <param name="data">å¯é€‰æ•°æ®åŸŸ</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›è§£æåçš„æŒ‡å®šç±»å‹è¯­ä¹‰å€¼åºåˆ—</returns>
+    IAsyncEnumerable<T> TrySendAsync<T>(byte code, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
+        where T : SemanticValue;
 
     /// <summary>
-    /// Òì²½·¢ËÍ DLT645 ÃüÁîµ½Ö¸¶¨µØÖ·¡£
+    /// å¼‚æ­¥å‘é€ DLT645 æ¶ˆæ¯å¤´å¹¶è¿”å›æŒ‡å®šç±»å‹çš„è¯­ä¹‰å€¼
     /// </summary>
-    /// <param name="code">¿ØÖÆÂë£¬Ö¸¶¨ÃüÁîÀàĞÍ¡£</param>
-    /// <param name="addresses">Ä¿±êÉè±¸µØÖ·£¨6 ×Ö½Ú£©¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»Ø½ÓÊÕµ½µÄÏìÓ¦ÏûÏ¢Í·µÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    IAsyncEnumerable<MessageHeader> TrySendAsync(byte code, byte[] addresses, CancellationToken cancellationToken);
+    /// <typeparam name="T">è¯­ä¹‰å€¼ç±»å‹</typeparam>
+    /// <param name="messageHeader">æ¶ˆæ¯å¤´</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›è§£æåçš„æŒ‡å®šç±»å‹è¯­ä¹‰å€¼åºåˆ—</returns>
+    IAsyncEnumerable<T> TrySendAsync<T>(MessageHeader messageHeader, CancellationToken cancellationToken = default)
+        where T : SemanticValue;
 
     /// <summary>
-    /// Òì²½·¢ËÍ DLT645 ÏûÏ¢¡£
+    /// å¼‚æ­¥æ‰¹é‡å‘é€å¤šä¸ª DLT645 æ¶ˆæ¯å¤´å¹¶è¿”å›æŒ‡å®šç±»å‹çš„è¯­ä¹‰å€¼
     /// </summary>
-    /// <param name="message">Òª·¢ËÍµÄÍêÕûÏûÏ¢Í·¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»Ø½ÓÊÕµ½µÄÏìÓ¦ÏûÏ¢Í·µÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    IAsyncEnumerable<MessageHeader> TrySendAsync(MessageHeader message, CancellationToken cancellationToken);
+    /// <typeparam name="T">è¯­ä¹‰å€¼ç±»å‹</typeparam>
+    /// <param name="messages">æ¶ˆæ¯å¤´é›†åˆ</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›è§£æåçš„æŒ‡å®šç±»å‹è¯­ä¹‰å€¼åºåˆ—</returns>
+    IAsyncEnumerable<T> TrySendAsync<T>([NotNull] IEnumerable<MessageHeader> messages, CancellationToken cancellationToken = default)
+        where T : SemanticValue;
 
     /// <summary>
-    /// Òì²½·¢ËÍ·ºĞÍ³éÏóÏûÏ¢¶ÔÏó¡£
+    /// å¼‚æ­¥å‘é€æšä¸¾å‘½ä»¤
     /// </summary>
-    /// <typeparam name="T">¼Ì³Ğ×Ô <see cref="AbstractMessage"/> µÄÏûÏ¢ÀàĞÍ¡£</typeparam>
-    /// <param name="data">Òª·¢ËÍµÄÏûÏ¢¶ÔÏó¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»Ø½ÓÊÕµ½µÄÏìÓ¦ÏûÏ¢Í·µÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    IAsyncEnumerable<MessageHeader> TrySendAsync<T>([NotNull] T data, CancellationToken cancellationToken)
-           where T : AbstractMessage, new();
+    /// <typeparam name="T">å‘½ä»¤æšä¸¾ç±»å‹</typeparam>
+    /// <param name="command">æšä¸¾å‘½ä»¤å€¼</param>
+    /// <param name="addresses">è®¾å¤‡åœ°å€ï¼ˆ6 å­—èŠ‚ï¼‰</param>
+    /// <param name="data">å¯é€‰æ•°æ®åŸŸ</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›è¯­ä¹‰å€¼åºåˆ—</returns>
+    IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
+        where T : Enum;
 
     /// <summary>
-    /// Òì²½Ğ´ÈëÔ­Ê¼×Ö½ÚÊı¾İµ½´®¿Ú¡£
+    /// å¼‚æ­¥å†™å…¥åŸå§‹å­—èŠ‚æ•°æ®
     /// </summary>
-    /// <param name="bytes">Òª·¢ËÍµÄ×Ö½ÚÊı×é¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»Ø½ÓÊÕµ½µÄÏìÓ¦ÏûÏ¢Í·µÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes, CancellationToken cancellationToken);
+    /// <param name="bytes">å­—èŠ‚æ•°ç»„</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›æ¶ˆæ¯å¤´åºåˆ—</returns>
+    IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Òì²½Ğ´ÈëÔ­Ê¼×Ö½ÚÊı¾İµ½´®¿Ú¡£
+    /// å¼‚æ­¥å†™å…¥åŸå§‹å­—èŠ‚æ•°æ®ï¼ˆMemory ç‰ˆæœ¬ï¼‰
     /// </summary>
-    /// <param name="buffer">Òª·¢ËÍµÄ×Ö½ÚÊı×é¡£</param>
-    /// <param name="cancellationToken">ÓÃÓÚÈ¡Ïû²Ù×÷µÄÁîÅÆ¡£</param>
-    /// <returns>·µ»Ø½ÓÊÕµ½µÄÏìÓ¦ÏûÏ¢Í·µÄÒì²½Ã¶¾ÙĞòÁĞ¡£</returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    IAsyncEnumerable<MessageHeader> TryWriteAsync(Memory<byte> buffer, CancellationToken cancellationToken);
-
+    /// <param name="buffer">å†…å­˜ç¼“å†²åŒº</param>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›æ¶ˆæ¯å¤´åºåˆ—</returns>
+    IAsyncEnumerable<MessageHeader> TryWriteAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Í¬²½Ğ´ÈëÊı¾İµ½Ö¸¶¨´®¿Ú
+    /// å¼‚æ­¥è¯»å–è®¾å¤‡åœ°å€ï¼ˆå¹¿æ’­æ–¹å¼ï¼‰
+    /// </summary>
+    /// <param name="cancellationToken">å–æ¶ˆä»¤ç‰Œ</param>
+    /// <returns>è¿”å›æ¶ˆæ¯å¤´åºåˆ—</returns>
+    Task<IAsyncEnumerable<MessageHeader>> TryReadAddressAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// åŒæ­¥å†™å…¥æ•°æ®åˆ°æŒ‡å®šä¸²å£
     /// </summary>
     int Write(string comPort, byte[] buffer);
     int Write(string comPort, byte[] buffer, int offset, int count);
     int Write(string comPort, Span<byte> buffer);
 
     /// <summary>
-    /// Í¬²½´ÓÖ¸¶¨´®¿Ú¶ÁÈ¡Êı¾İ
+    /// åŒæ­¥ä»æŒ‡å®šä¸²å£è¯»å–æ•°æ®
     /// </summary>
     int Read(string comPort, byte[] buffer);
     int Read(string comPort, byte[] buffer, int offset, int count);
     int Read(string comPort, Span<byte> buffer);
 
     /// <summary>
-    /// Òì²½Ğ´ÈëÊı¾İµ½Ö¸¶¨´®¿Ú
+    /// å¼‚æ­¥å†™å…¥æ•°æ®åˆ°æŒ‡å®šä¸²å£
     /// </summary>
     Task<int> WriteAsync(string comPort, byte[] buffer, CancellationToken cancellationToken = default);
     Task<int> WriteAsync(string comPort, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
     Task<int> WriteAsync(string comPort, Memory<byte> buffer, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Òì²½´ÓÖ¸¶¨´®¿Ú¶ÁÈ¡Êı¾İ
+    /// å¼‚æ­¥ä»æŒ‡å®šä¸²å£è¯»å–æ•°æ®
     /// </summary>
     Task<int> ReadAsync(string comPort, byte[] buffer, CancellationToken cancellationToken = default);
     Task<int> ReadAsync(string comPort, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
     Task<int> ReadAsync(string comPort, Memory<byte> buffer, CancellationToken cancellationToken = default);
-
 }
