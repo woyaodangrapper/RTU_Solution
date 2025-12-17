@@ -66,6 +66,18 @@ public interface IDlt645Client : IContracts
         where T : Enum;
 
     /// <summary>
+    /// 异步发送枚举命令
+    /// </summary>
+    /// <typeparam name="T">命令枚举类型</typeparam>
+    /// <param name="command">枚举命令值</param>
+    /// <param name="addresses">设备地址（6 字节）</param>
+    /// <param name="data">可选数据域</param>
+    /// <param name="cancellationToken">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, string addresses, byte[]? data = null, CancellationToken cancellationToken = default)
+        where T : Enum;
+
+    /// <summary>
     /// 异步写入原始字节数据
     /// </summary>
     /// <param name="bytes">字节数组</param>

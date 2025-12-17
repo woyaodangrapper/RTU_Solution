@@ -24,9 +24,18 @@ var channel = new CreateBuilder("MyChannel")
 //    Console.WriteLine($"Received address: {BitConverter.ToString(frame.Address)}");
 //}
 
-await foreach (var frame in channel.TrySendAsync(Command.EnergyData.None, "11-11-00-00-00-00"))
+try
 {
-    Console.WriteLine($"{BitConverter.ToString(frame.ToBytes())}");
+    await foreach (var frame in channel.TrySendAsync(Command.EnergyData.None, "11-11-00-00-00-00"))
+    {
+        Console.WriteLine($"{frame}");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Caught exception: {ex}");
 }
 
 Console.WriteLine("Hello, World!");
+
+Console.ReadLine();

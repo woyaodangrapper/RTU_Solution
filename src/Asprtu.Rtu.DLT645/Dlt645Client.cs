@@ -2,11 +2,10 @@ using Asprtu.Rtu.Attributes;
 using Asprtu.Rtu.Contracts.DLT645;
 using Asprtu.Rtu.DLT645.Contracts;
 using Asprtu.Rtu.DLT645.Extensions;
+using Asprtu.Rtu.DLT645.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Runtime.CompilerServices;
-
-using Asprtu.Rtu.DLT645.Serialization;
 using System.Diagnostics.CodeAnalysis;
 
 #if NET6_0_OR_GREATER
@@ -75,11 +74,15 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         DataFormats.TryGet(code, out var def);
 
         var length = messageHeader.ToBytes(out var messageBytes);
-        await foreach (var item in TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken)
+
+        var messages = TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken);
+
+        await foreach (var item in _decoder.TryDecodeAsync(messages, def!, OnError, cancellationToken)
             .ConfigureAwait(false))
         {
-            yield return _decoder.Decode(item.ToBytes(), def!);
+            yield return item;
         }
+
     }
 
     public async IAsyncEnumerable<T> TrySendAsync<T>(byte code, byte[] addresses, byte[]? data = null,
@@ -94,26 +97,35 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         ThrowHelper.ThrowIfNull(def);
 
+
+
         var length = messageHeader.ToBytes(out var messageBytes);
-        await foreach (var item in TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken)
+
+        var messages = TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken);
+
+        await foreach (var item in _decoder.TryDecodeAsync<T>(messages, def!, OnError, cancellationToken)
             .ConfigureAwait(false))
         {
-            yield return _decoder.Decode<T>(item.ToBytes(), def!);
+            yield return item;
         }
     }
 
     public async IAsyncEnumerable<T> TrySendAsync<T>(MessageHeader messageHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where T : SemanticValue
     {
+
         DataFormats.TryGet(messageHeader.Code, out var def);
 
         ThrowHelper.ThrowIfNull(def);
 
         var length = messageHeader.ToBytes(out var messageBytes);
-        await foreach (var item in TryWriteAsync(messageBytes, cancellationToken)
-            .ConfigureAwait(false))
+
+        var messages = TryWriteAsync(messageBytes.AsMemory(0, length), cancellationToken);
+
+        await foreach (var item in _decoder.TryDecodeAsync<T>(messages, def!, OnError, cancellationToken)
+         .ConfigureAwait(false))
         {
-            yield return _decoder.Decode<T>(item.ToBytes(), def!);
+            yield return item;
         }
     }
 
@@ -146,9 +158,28 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             return TrySendAsync(Convert.ToByte(command), addresses, data, cancellationToken);
         return EmptyAsync<SemanticValue>();
     }
+    public async IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, string addresses, byte[]? data = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+         where T : Enum
+    {
+        var type = typeof(T);
+        if (Attribute.IsDefined(type, typeof(EnumCommandAttribute)))
+        {
+            var commandByte = Convert.ToByte(command);
+            foreach (var address in AddressFormatExtension.FormatAddresses(addresses))
+            {
+                await foreach (var item in TrySendAsync(commandByte, address, data, cancellationToken)
+                    .ConfigureAwait(false))
+                {
+                    yield return item;
+                }
+            }
+        }
 
+        yield break;
+    }
     public async IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes,
-    [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await foreach (var frame in TryWriteAsync(bytes.AsMemory(), cancellationToken)
             .ConfigureAwait(false))
@@ -158,7 +189,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     }
 
     public async IAsyncEnumerable<MessageHeader> TryWriteAsync(Memory<byte> buffer,
-    [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (!IsPortsConnected())
         {
@@ -250,37 +281,49 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         var portReadingTasks = readTasks.Select(async seq =>
         {
-            await foreach (var header in seq.WithCancellation(cancellationToken))
+#pragma warning disable CA1031 // 不捕获常规异常类型
+            try
             {
-                await outputChannel.Writer.WriteAsync(header, cancellationToken).ConfigureAwait(false);
+                await foreach (var header in seq.WithCancellation(cancellationToken))
+                {
+                    await outputChannel.Writer.WriteAsync(header, cancellationToken).ConfigureAwait(false);
+                }
             }
+            catch (Exception ex)
+            {
+                outputChannel.Writer.TryComplete(ex);
+            }
+#pragma warning restore CA1031 // 不捕获常规异常类型
         });
 
         // 启动一个任务来等待所有端口读取结束
         var completionTask = Task.WhenAll(portReadingTasks);
 
-        try
+        while (await outputChannel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            while (await outputChannel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+            if (outputChannel.Reader.TryRead(out var header))
             {
-                if (outputChannel.Reader.TryRead(out var header))
+                if (continueCallback != null
+                    && continueCommandCode.HasValue
+                    && header.Code == continueCommandCode.Value)
                 {
-                    if (continueCallback != null
-                        && continueCommandCode.HasValue
-                        && header.Code == continueCommandCode.Value)
-                    {
-                        await continueCallback(header).ConfigureAwait(false);
-                    }
-                    yield return header;
+                    await continueCallback(header).ConfigureAwait(false);
                 }
+                yield return header;
             }
         }
-        finally
+
+
+        try
         {
-            outputChannel.Writer.Complete();
-            await Task.WhenAny(completionTask)
-                .ConfigureAwait(false);
+            await Task.WhenAll(portReadingTasks).ConfigureAwait(false);
+            outputChannel.Writer.TryComplete(); // 正常完成
         }
+        catch (Exception ex)
+        {
+            outputChannel.Writer.TryComplete(ex);
+        }
+
     }
 
 #if NET6_0_OR_GREATER
@@ -315,20 +358,21 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             }
             catch (OperationCanceledException)
             {
-                break;
+                yield break;
             }
             catch (IOException ex)
             {
                 OnError?.Invoke(ex);
                 _logger.LogError(ex, "IO error occurred while reading from port {PortName}", port.PortName);
-                break;
+                yield break;
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
                 OnError?.Invoke(ex);
                 _logger.LogError(ex, "Invalid operation while reading from port {PortName}", port.PortName);
-                break;
+                yield break;
             }
+
 
             if (bytesRead <= 0)
                 continue;

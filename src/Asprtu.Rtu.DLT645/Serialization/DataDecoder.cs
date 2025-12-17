@@ -1,5 +1,7 @@
-﻿using Asprtu.Rtu.DLT645.Contracts;
+﻿using Asprtu.Rtu.Contracts.DLT645;
+using Asprtu.Rtu.DLT645.Contracts;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Asprtu.Rtu.DLT645.Serialization;
 
@@ -24,6 +26,34 @@ public class DataDecoder : IDataDecoder
             _ => throw new NotSupportedException($"不支持的编码类型 {format.Encoding}")
         };
     }
+    public async IAsyncEnumerable<SemanticValue> TryDecodeAsync(
+      IAsyncEnumerable<MessageHeader> source,
+      DataFormat format,
+      Action<Exception>? onError = null,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await foreach (var header in source.WithCancellation(cancellationToken))
+        {
+            SemanticValue value = Decode(header.ToBytes(), format);
+            yield return value;
+        }
+    }
+
+    public async IAsyncEnumerable<T> TryDecodeAsync<T>(
+        IAsyncEnumerable<MessageHeader> source,
+        DataFormat format,
+        Action<Exception>? onError = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        where T : SemanticValue
+    {
+        await foreach (var header in source.WithCancellation(cancellationToken))
+        {
+            T value = Decode<T>(header.ToBytes(), format);
+            yield return value;
+        }
+    }
+
+
     private static NumericValue DecodeBcd(ReadOnlySpan<byte> data, DataFormat format)
     {
         if (data.IsEmpty)
