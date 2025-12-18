@@ -1,9 +1,9 @@
-using Asprtu.Rtu;
-using Asprtu.Rtu.Contracts;
-using Asprtu.Rtu.TcpClient;
-using Asprtu.Rtu.TcpClient.Contracts;
-using Asprtu.Rtu.TcpServer;
-using Asprtu.Rtu.TcpServer.Contracts;
+using Aspdcs.Rtu;
+using Aspdcs.Rtu.Contracts;
+using Aspdcs.Rtu.TcpClient;
+using Aspdcs.Rtu.TcpClient.Contracts;
+using Aspdcs.Rtu.TcpServer;
+using Aspdcs.Rtu.TcpServer.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -21,8 +21,8 @@ namespace Tcp
                 {
                     var services = new ServiceCollection();
 
-                    services.AddSingleton(sp => new Asprtu.Rtu.TcpServer.Contracts.ChannelOptions("server", "0.0.0.0", 1878));
-                    services.AddSingleton(sp => new Asprtu.Rtu.TcpClient.Contracts.ChannelOptions("client", "127.0.0.1", 1878));
+                    services.AddSingleton(sp => new Aspdcs.Rtu.TcpServer.Contracts.ChannelOptions("server", "0.0.0.0", 1878));
+                    services.AddSingleton(sp => new Aspdcs.Rtu.TcpClient.Contracts.ChannelOptions("client", "127.0.0.1", 1878));
 
                     services.AddSingleton<ILibraryCapacities<TcpServer>, LibraryCapacities<TcpServer>>();
                     services.AddSingleton<ILibraryCapacities<TcpClient>, LibraryCapacities<TcpClient>>();
@@ -43,8 +43,8 @@ namespace Tcp
 
         private readonly ITcpServer _server;
         private readonly ITcpClient _client;
-        private readonly Asprtu.Rtu.TcpServer.Contracts.ChannelOptions _serverOptions;
-        private readonly Asprtu.Rtu.TcpClient.Contracts.ChannelOptions _clientOptions;
+        private readonly Aspdcs.Rtu.TcpServer.Contracts.ChannelOptions _serverOptions;
+        private readonly Aspdcs.Rtu.TcpClient.Contracts.ChannelOptions _clientOptions;
 
         public TcpServiceProviderTests()
         {
@@ -53,8 +53,8 @@ namespace Tcp
             _server = scope.ServiceProvider.GetRequiredService<ILibraryCapacities<TcpServer>>().Contracts;
             _client = scope.ServiceProvider.GetRequiredService<ILibraryCapacities<TcpClient>>().Contracts;
 
-            _serverOptions = scope.ServiceProvider.GetRequiredService<Asprtu.Rtu.TcpServer.Contracts.ChannelOptions>();
-            _clientOptions = scope.ServiceProvider.GetRequiredService<Asprtu.Rtu.TcpClient.Contracts.ChannelOptions>();
+            _serverOptions = scope.ServiceProvider.GetRequiredService<Aspdcs.Rtu.TcpServer.Contracts.ChannelOptions>();
+            _clientOptions = scope.ServiceProvider.GetRequiredService<Aspdcs.Rtu.TcpClient.Contracts.ChannelOptions>();
         }
 
         [Fact]

@@ -13,8 +13,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\Asprtu.Rtu.TcpClient\Asprtu.Rtu.TcpClient.csproj" />
-		<ProjectReference Include="..\..\src\Asprtu.Rtu.TcpServer\Asprtu.Rtu.TcpServer.csproj" />
+		<ProjectReference Include="..\..\src\Aspdcs.Rtu.TcpClient\Aspdcs.Rtu.TcpClient.csproj" />
+		<ProjectReference Include="..\..\src\Aspdcs.Rtu.TcpServer\Aspdcs.Rtu.TcpServer.csproj" />
 	</ItemGroup>
 
 </Project>

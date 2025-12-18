@@ -1,7 +1,7 @@
-﻿using Asprtu.Rtu;
-using Asprtu.Rtu.Contracts;
-using Asprtu.Rtu.TcpClient;
-using Asprtu.Rtu.TcpServer;
+﻿using Aspdcs.Rtu;
+using Aspdcs.Rtu.Contracts;
+using Aspdcs.Rtu.TcpClient;
+using Aspdcs.Rtu.TcpServer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -14,9 +14,9 @@ var console = LoggerFactory.Create(builder =>
 });
 
 var builder = WebApplication.CreateSlimBuilder();
-//builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(Asprtu.Rtu.Contracts.ILibraryCapacities), typeof(Asprtu.Rtu.LibraryCapacities<>).MakeGenericType(typeof(global::Asprtu.Rtu.TcpServer.TcpServer))));
-//builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(Asprtu.Rtu.Contracts.ILibraryCapacities), typeof(Asprtu.Rtu.LibraryCapacities<>).MakeGenericType(typeof(global::Asprtu.Rtu.TcpClient.TcpClient))));
-//builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(Asprtu.Rtu.Contracts.ILibraryCapacities), typeof(Asprtu.Rtu.LibraryCapacities<>).MakeGenericType(typeof(global::Asprtu.Rtu.TcpClient.TcpClient))));
+//builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(Aspdcs.Rtu.Contracts.ILibraryCapacities), typeof(Aspdcs.Rtu.LibraryCapacities<>).MakeGenericType(typeof(global::Aspdcs.Rtu.TcpServer.TcpServer))));
+//builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(Aspdcs.Rtu.Contracts.ILibraryCapacities), typeof(Aspdcs.Rtu.LibraryCapacities<>).MakeGenericType(typeof(global::Aspdcs.Rtu.TcpClient.TcpClient))));
+//builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton(typeof(Aspdcs.Rtu.Contracts.ILibraryCapacities), typeof(Aspdcs.Rtu.LibraryCapacities<>).MakeGenericType(typeof(global::Aspdcs.Rtu.TcpClient.TcpClient))));
 //builder.Services.Add(new ServiceDescriptor(
 //         typeof(ILibraryCapacities<TcpClient>),
 //         typeof(LibraryCapacities<TcpClient>),
@@ -33,7 +33,7 @@ builder.AddLibraryOptions();
 
     //builder.Services.AddSingleton<ILibraryCapacities<TcpClient>>(provider =>
     //{
-    //    var options = new Asprtu.Rtu.TcpClient.Contracts.ChannelOptions("test", "127.0.0.1", 1868);
+    //    var options = new Aspdcs.Rtu.TcpClient.Contracts.ChannelOptions("test", "127.0.0.1", 1868);
     //    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
     //    var client = new TcpClient(options, loggerFactory);
     //    return new LibraryCapacities<TcpClient>(client);
@@ -41,7 +41,7 @@ builder.AddLibraryOptions();
 
     //builder.Services.AddSingleton<ILibraryCapacities<TcpServer>>(provider =>
     //{
-    //    var options = new Asprtu.Rtu.TcpServer.Contracts.ChannelOptions("test", "127.0.0.1", 1868);
+    //    var options = new Aspdcs.Rtu.TcpServer.Contracts.ChannelOptions("test", "127.0.0.1", 1868);
     //    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
 
     //    var server = new TcpServer(options, loggerFactory);

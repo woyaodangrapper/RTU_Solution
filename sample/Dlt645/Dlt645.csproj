@@ -14,7 +14,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\src\Asprtu.Rtu.DLT645\Asprtu.Rtu.DLT645.csproj" />
+		<ProjectReference Include="..\..\src\Aspdcs.Rtu.DLT645\Aspdcs.Rtu.DLT645.csproj" />
 	</ItemGroup>
 
 </Project>

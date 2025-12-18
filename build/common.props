@@ -20,19 +20,19 @@
 		<ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
 
 		<!-- 设置作者信息 -->
-		<Authors>Asprtu</Authors>
+		<Authors>Aspdcs</Authors>
 
 		<!-- 设置产品名称 -->
-		<Product>Asprtu</Product>
+		<Product>Aspdcs</Product>
 
 		<!-- 设置包前缀 -->
-		<PackagePrefix>Asprtu</PackagePrefix>
+		<PackagePrefix>Aspdcs</PackagePrefix>
 
 		<!-- 设置包图标 -->
 		<PackageIcon></PackageIcon>
 
 		<!-- 设置仓库 URL -->
-		<RepositoryUrl>https://github.com/woyaodangrapper/Asprtu</RepositoryUrl>
+		<RepositoryUrl>https://github.com/woyaodangrapper/Aspdcs</RepositoryUrl>
 
 		<!-- 设置包项目 URL -->
 		<PackageProjectUrl>https://github.com/woyaodangrapper/RTU_Solution</PackageProjectUrl>

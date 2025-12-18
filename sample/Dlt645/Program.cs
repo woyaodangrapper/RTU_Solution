@@ -1,7 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using Asprtu.Rtu.DLT645.Contracts;
-using Asprtu.Rtu.DLT645.Serialization;
+using Aspdcs.Rtu.DLT645.Contracts;
+using Aspdcs.Rtu.DLT645.Serialization;
 using Microsoft.Extensions.Logging;
 
 
