@@ -6,8 +6,9 @@ namespace Aspdcs.Rtu.DLT645.Serialization;
 
 public class DataDecoder : IDataDecoder
 {
-    public SemanticValue Decode(ReadOnlySpan<byte> data, [NotNull] DataFormat format)
+    public SemanticValue Decode(ReadOnlySpan<byte> message, [NotNull] DataFormat format)
     {
+        message.TryGetData(out var data);
         return format.Encoding switch
         {
             DataFormats.ValueEncoding.Bcd => DecodeBcd(data, format),
@@ -15,9 +16,10 @@ public class DataDecoder : IDataDecoder
         };
     }
 
-    public T Decode<T>(ReadOnlySpan<byte> data, [NotNull] DataFormat format)
+    public T Decode<T>(ReadOnlySpan<byte> message, [NotNull] DataFormat format)
         where T : SemanticValue
     {
+        message.TryGetData(out var data);
         return format.Encoding switch
         {
             DataFormats.ValueEncoding.Bcd => (T)(SemanticValue)DecodeBcd(data, format),
@@ -62,11 +64,14 @@ public class DataDecoder : IDataDecoder
         long value = 0;
         for (int i = data.Length - 1; i >= 0; i--)
         {
-            byte high = (byte)((data[i] >> 4) & 0x0F);
-            byte low = (byte)(data[i] & 0x0F);
+            byte b = data[i];
 
+            // 去掉 DL/T645 的 +0x33 偏移
+            b = (byte)(b - 0x33);
+            byte high = (byte)((b >> 4) & 0x0F);
+            byte low = (byte)(b & 0x0F);
             if (high > 9 || low > 9)
-                throw new FormatException($"Invalid BCD value at byte {i}: 0x{data[i]:X2}");
+                continue;
 
             value = value * 100 + high * 10 + low;
         }

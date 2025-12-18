@@ -26,7 +26,7 @@ var channel = new CreateBuilder("MyChannel")
 
 try
 {
-    await foreach (var frame in channel.TrySendAsync(Command.EnergyData.None, "11-11-00-00-00-00"))
+    await foreach (var frame in channel.TrySendAsync(Command.EnergyData.ForwardActiveTotalEnergy, "11-11-00-00-00-00"))
     {
         Console.WriteLine($"{frame}");
     }

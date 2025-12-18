@@ -4,18 +4,23 @@
 public sealed class EnumCommandAttribute : Attribute
 { }
 
+
+[AttributeUsage(AttributeTargets.Enum)]
+public sealed class EnumDataIdentifierAttribute : Attribute
+{ }
 /// <summary>
 /// DLT645 协议命令定义（静态容器）
 /// </summary>
 public static class Command
 {
+
     #region 电能量 (Energy Data) - 00 xx xx xx
 
     /// <summary>
     /// 电能量相关数据标识符
     /// </summary>
-    [Flags, EnumCommand]
-    public enum EnergyData
+    [Flags, EnumDataIdentifier]
+    public enum EnergyData : uint
     {
         /// <summary>
         /// 组合有功总电能
@@ -96,7 +101,7 @@ public static class Command
     /// 最大需量数据标识符
     /// </summary>
     [EnumCommand]
-    public enum MaximumDemand
+    public enum MaximumDemand : uint
     {
         /// <summary>
         /// 无
@@ -121,8 +126,8 @@ public static class Command
     /// <summary>
     /// 瞬时量/变量数据标识符
     /// </summary>
-    [EnumCommand]
-    public enum Variables
+    [EnumDataIdentifier]
+    public enum Variables : uint
     {
         /// <summary>
         /// 无
@@ -277,8 +282,8 @@ public static class Command
     /// <summary>
     /// 参变量数据标识符
     /// </summary>
-    [EnumCommand]
-    public enum Parameters
+    [EnumDataIdentifier]
+    public enum Parameters : uint
     {
         /// <summary>
         /// 无
@@ -319,8 +324,8 @@ public static class Command
     /// DLT645 冻结类型枚举
     /// Freeze Type Enumeration
     /// </summary>
-    [EnumCommand]
-    public enum Freeze
+    [EnumDataIdentifier]
+    public enum Freeze : uint
     {
         /// <summary>
         /// 无
@@ -359,8 +364,8 @@ public static class Command
     /// <summary>
     /// DLT645-1997 兼容数据标识符
     /// </summary>
-    [EnumCommand]
-    public enum Legacy1997
+    [EnumDataIdentifier]
+    public enum Legacy1997 : uint
     {
         /// <summary>
         /// 无
@@ -386,7 +391,7 @@ public static class Command
     /// DLT645 协议控制代码
     /// </summary>
     [EnumCommand]
-    public enum Code
+    public enum Code : uint
     {
         /// <summary>
         /// 0. 无

@@ -139,6 +139,45 @@ internal static class MessageHeaderExtensions
     /// <param name="span">包含完整 DLT645 帧的字节序列</param>
     /// <param name="data">输出数据域</param>
     /// <returns>帧结构是否无效</returns>
+    public static bool TryGetData(this ReadOnlySpan<byte> span, out ReadOnlySpan<byte> data)
+    {
+        data = default;
+
+        int startCodeIndex = 0;
+        while (startCodeIndex < span.Length && span[startCodeIndex] == 0xFE)
+            startCodeIndex++;
+
+        if (span.Length - startCodeIndex < 12)
+            return false;
+
+        if (span[startCodeIndex] != 0x68)
+            return false;
+
+        if (span[startCodeIndex + 7] != 0x68)
+            return false;
+
+        byte dataLength = span[startCodeIndex + 9];
+
+        int totalFrameLength = 12 + dataLength;
+        if (span.Length - startCodeIndex < totalFrameLength)
+            return false;
+
+        // 验证结束码
+        if (span[startCodeIndex + totalFrameLength - 1] != 0x16)
+            return false;
+
+        // 提取数据域
+        int dataStartIndex = startCodeIndex + 10;
+        data = span.Slice(dataStartIndex, dataLength);
+
+        return true;
+    }
+    /// <summary>
+    /// 快速从字节序列中提取 DLT645 数据域
+    /// </summary>
+    /// <param name="span">包含完整 DLT645 帧的字节序列</param>
+    /// <param name="data">输出数据域</param>
+    /// <returns>帧结构是否无效</returns>
     public static bool TryGetData(this Span<byte> span, out Span<byte> data)
     {
         data = default;
