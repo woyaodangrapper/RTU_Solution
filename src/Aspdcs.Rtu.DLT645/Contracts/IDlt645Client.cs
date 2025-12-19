@@ -31,7 +31,7 @@ public interface IDlt645Client : IContracts
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>返回消息头序列</returns>
-    Task<IAsyncEnumerable<MessageHeader>> TryReadAddressAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<AddressValue> TryReadAddressAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 同步写入数据到指定串口

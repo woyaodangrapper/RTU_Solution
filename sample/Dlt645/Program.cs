@@ -17,6 +17,10 @@ var channel = new CreateBuilder("MyChannel")
     .WithLogger(console)
     .Run();
 
+await foreach (var address in channel.TryReadAddressAsync())
+{
+    Console.WriteLine($"addresses: {address}");
+}
 try
 {
     Console.WriteLine("Starting read operation without CancellationToken (using internal timeout protection)...");
