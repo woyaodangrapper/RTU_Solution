@@ -1,6 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using Aspdcs.Rtu.DLT645.Contracts;
+using Aspdcs.Rtu.DLT645;
 using Microsoft.Extensions.Logging;
 
 
@@ -33,5 +33,6 @@ catch (Exception ex)
 {
     Console.WriteLine($"Caught exception: {ex.GetType().Name}: {ex.Message}");
 }
+
 
 Console.WriteLine("Hello, World!");

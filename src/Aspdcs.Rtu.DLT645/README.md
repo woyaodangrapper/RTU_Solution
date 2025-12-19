@@ -25,23 +25,23 @@ dotnet add package Aspdcs.Rtu.DLT645
 ### 基础用法
 
 ```csharp
-using Aspdcs.Rtu.DLT645;
-using Microsoft.Extensions.Logging;
+using Aspdcs.Rtu.DLT645.Contracts;
 
-// 1. 创建客户端（启用自动发现设备）
-var loggerFactory = LoggerFactory.Create(builder => 
-    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+//var loggerFactory = LoggerFactory.Create(builder =>
+//    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
-var channel = new ChannelOptions.CreateBuilder("MyChannel")
+
+// 1.  创建客户端（启用自动发现设备）
+var channel = new CreateBuilder("MyChannel")
     .WithChannel("COM5")
-    .WithLogger(loggerFactory)
+    //.WithLogger(loggerFactory)
     .Run();
 
 // 2. 读取电能数据（ReadAsync 默认读取正向有功总电能 0x00010000）
-Console.WriteLine("开始读取电表数据（使用内部超时保护）...");
+Console.WriteLine("Starting read operation (using internal timeout protection)...");
 await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
 {
-    Console.WriteLine($"接收数据: {frame}");
+    Console.WriteLine($"Received: {frame}");
 }
 ```
 
@@ -162,7 +162,7 @@ foreach (var dataId in dataIds)
 | 平台 | 版本 | 串口库 |
 |------|------|--------|
 | .NET 6+ | ✅ | RJCP.IO.Ports 3.0.4 |
-| .NET Standard | ✅ 2.1 | RJCP.IO.Ports 3.0.4 |
+| .NET Standard | ✅ 2.1 | System.IO.Ports 4.7.0 |
 
 ## 示例项目
 

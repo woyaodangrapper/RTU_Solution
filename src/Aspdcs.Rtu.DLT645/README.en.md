@@ -25,16 +25,16 @@ dotnet add package Aspdcs.Rtu.DLT645
 ### Basic Usage
 
 ```csharp
-using Aspdcs.Rtu.DLT645;
-using Microsoft.Extensions.Logging;
+using Aspdcs.Rtu.DLT645.Contracts;
 
-// 1. Create client (with auto-discovery enabled)
-var loggerFactory = LoggerFactory.Create(builder => 
-    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+//var loggerFactory = LoggerFactory.Create(builder =>
+//    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
-var channel = new ChannelOptions.CreateBuilder("MyChannel")
+
+// 1.  Create client (with auto-discovery enabled)
+var channel = new CreateBuilder("MyChannel")
     .WithChannel("COM5")
-    .WithLogger(loggerFactory)
+    //.WithLogger(loggerFactory)
     .Run();
 
 // 2. Read energy data (ReadAsync defaults to forward active total energy 0x00010000)
@@ -155,7 +155,7 @@ See [Protocol Completion Document](../../docs/LICENSE/DLT645_协议栈完成度.
 | Platform | Version | Serial Library |
 |----------|---------|----------------|
 | .NET 6+ | ✅ | RJCP.IO.Ports 3.0.4 |
-| .NET Standard | ✅ 2.1 | RJCP.IO.Ports 3.0.4 |
+| .NET Standard | ✅ 2.1 | System.IO.Ports 4.7.0 |
 
 ## Sample Project
 

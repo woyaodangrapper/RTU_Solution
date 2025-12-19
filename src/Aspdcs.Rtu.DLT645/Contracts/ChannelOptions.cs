@@ -12,7 +12,7 @@ using System.IO.Ports;
 
 using ThrowHelper = Aspdcs.Rtu.Extensions.ThrowHelper;
 
-namespace Aspdcs.Rtu.DLT645.Contracts;
+namespace Aspdcs.Rtu.DLT645;
 
 /// <summary>
 /// DLT645 通道配置选项
@@ -117,10 +117,10 @@ public sealed class CreateBuilder
     /// <summary>
     /// 设置 LoggerFactory
     /// </summary>
-    public CreateBuilder WithLogger(ILoggerFactory factory)
+    public CreateBuilder WithLogger(ILoggerFactory? factory)
     {
         ThrowHelper.ThrowIfNull(factory);
-        _loggerFactory = factory;
+        _loggerFactory = factory ?? NullLoggerFactory.Instance;
         return this;
     }
 
