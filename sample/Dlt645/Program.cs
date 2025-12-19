@@ -17,15 +17,8 @@ var channel = new CreateBuilder("MyChannel")
     .WithLogger(console)
     .Run();
 
-//var client = new Dlt645Client(channelOptions, console);
-//await foreach (var frame in await channel.TryReadAddressAsync())
-//{
-//    Console.WriteLine($"Received address: {BitConverter.ToString(frame.Address)}");
-//}
-
 try
 {
-    // 不传递 CancellationToken，测试 Dlt645Client 内部的兜底超时保护
     Console.WriteLine("Starting read operation without CancellationToken (using internal timeout protection)...");
     await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
     {

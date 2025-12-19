@@ -1,267 +1,191 @@
 # Aspdcs.Rtu.DLT645
 
 [![NuGet](https://img.shields.io/nuget/v/Aspdcs.Rtu.DLT645.svg)](https://www.nuget.org/packages/Aspdcs.Rtu.DLT645)
-
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 
-Libreria di comunicazione per misuratori di potenza DLT645-2007 pronta per la produzione, con supporto per .NET 6+
+Production-ready DLT645-2007 power meter communication library for .NET 6+
 
-## ✨ Funzionalità principali
+## ✨ Core Features
 
-- ✅ **Implementazione completa del protocollo**: Crittografia/decrittografia dei campi dati (±0x33), decodifica BCD, verifica del checksum
+- ✅ **Complete Protocol Implementation**: Data field encryption/decryption (±0x33), BCD decoding, checksum verification
+- ✅ **Zero-Copy Architecture**: Performance optimization based on `Span<byte>` / `Memory<byte>`
+- ✅ **Smart Response**: Fast unicast return, adaptive broadcast termination
+- ✅ **Packet Fragmentation Handling**: Circular buffer + state machine, robust and reliable
+- ✅ **Async Streaming**: `IAsyncEnumerable<T>` streaming data processing
+- ✅ **Dependency Injection**: Out-of-the-box DI support
 
-- ✅ **Architettura Zero-Copy**: Prestazioni ottimizzate in base a `Span<byte>` / `Memoria<byte>`
+## Quick Start
 
-- ✅ **Risposta intelligente:** Ritorno rapido unicast, fine adattiva broadcast
-
-- ✅ **Gestione della fusione dei pacchetti:** Buffer circolare + macchina a stati, robusto e affidabile
-
-- ✅ **Streaming asincrono:** Elaborazione dei dati in streaming `IAsyncEnumerable<T>`
-
-- ✅ **Iniezione di dipendenza:** Supporto DI pronto all'uso
-
-## Avvio rapido
-
-### Installazione
+### Installation
 
 ```bash
-dotnet aggiungi pacchetto Aspdcs.Rtu.DLT645
-
+dotnet add package Aspdcs.Rtu.DLT645
 ```
 
-### Utilizzo di base
+### Basic Usage
 
 ```csharp
 using Aspdcs.Rtu.DLT645;
-
 using Microsoft.Extensions.Logging;
 
-// 1. Crea un client
-
-var loggerFactory = LoggerFactory.Create(builder =>
-
-builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+// 1. Create client
+var loggerFactory = LoggerFactory.Create(builder => 
+    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
 var options = new ChannelOptions.CreateBuilder("Meter1")
-.WithChannel("COM5", 2400, Parity.Even)
-
-.WithTimeout(TimeSpan.FromSeconds(2))
-
-.Build();
+    .WithChannel("COM5", 2400, Parity.Even)
+    .WithTimeout(TimeSpan.FromSeconds(2))
+    .Build();
 
 using var client = new Dlt645Client(options, loggerFactory);
 
-// 2. Leggi i dati energetici
-
+// 2. Read energy data
 byte[] address = { 0x11, 0x11, 0x00, 0x00, 0x00, 0x00 };
-
-uint dataId = 0x00010000; // Energia totale attiva positiva corrente
+uint dataId = 0x00010000; // Current forward active total energy
 
 await foreach (var value in client.ReadAsync(address, dataId))
-
 {
-Console.WriteLine($"Energy: {value}");
-
+    Console.WriteLine($"Energy: {value}");
 }
 ```
 
-### Iniezione di dipendenza
+### Dependency Injection
 
-````csharp
-
+```csharp
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
-
 services.AddLogging(builder => builder.AddConsole());
 
-// Registra il client DLT645
-
+// Register DLT645 client
 services.AddDlt645Client(options =>
-
 {
-options.Name = "Meter1";
-
-options.Channels.Add(new ComChannel("COM5", null));
-
-options.BaudRate = 2400;
-
-options.Parity = Parity.Even;
-
-options.Timeout = TimeSpan.FromSeconds(2);
-
+    options.Name = "Meter1";
+    options.Channels.Add(new ComChannel("COM5", null));
+    options.BaudRate = 2400;
+    options.Parity = Parity.Even;
+    options.Timeout = TimeSpan.FromSeconds(2);
 });
 
 var provider = services.BuildServiceProvider();
-
 var client = provider.GetRequiredService<IDlt645Client>();
+```
 
-// Utilizza la trasmissione await per leggere l'indirizzo
+### Broadcast Address Discovery
 
 ```csharp
-
-// Rileva automaticamente tutti i contatori nella rete
-
+// Automatically discover all meters in the network
 await foreach (var frame in await client.TryReadAddressAsync())
-
 {
-Console.WriteLine($"Dispositivo rilevato: {BitConverter.ToString(frame.Address)}");
-
+    Console.WriteLine($"Found device: {BitConverter.ToString(frame.Address)}");
 }
-````
+```
 
-### Lettura batch
+### Batch Reading
 
 ```csharp
-
 var dataItems = new[]
-
 {
-0x00010000, // Energia attiva positiva totale
-
-0x02010100, // Tensione di fase A
-
-0x02020100 // Corrente di fase A
-
+    0x00010000,  // Forward active total energy
+    0x02010100,  // Phase A voltage
+    0x02020100   // Phase A current
 };
 
 foreach (var dataId in dataItems)
-
 {
-await foreach (var value in client.ReadAsync(address, dataId))
-
-{
-Console.WriteLine($"Identificatore dati {dataId:X8}: {value}");
-
-}
+    await foreach (var value in client.ReadAsync(address, dataId))
+    {
+        Console.WriteLine($"Data ID {dataId:X8}: {value}");
+    }
 }
 ```
 
-### Formato indirizzo stringa
+### String Address Format
 
 ```csharp
-
-// Supporta più formati di indirizzo
-
+// Supports multiple address formats
 await foreach (var value in client.ReadAsync("111100000000", dataId))
-
 {
-Console.WriteLine(value);
-
-foreach (var dataId in dataIds)
-
-{
-var result = await channel.TryReadAsync(address, dataId);
-
-if (result.Success)
-
-{
-Console.WriteLine($"Data item {dataId:X8}: {BitConverter.ToString(result.Data)}");
-
-}
+    Console.WriteLine(value);
 }
 ```
-
-## Protocollo supportato
+## Protocol Support
 
 ### DLT645-1997
 
-- ✅ Lettura dati
+- ✅ Read data
+- ✅ Broadcast time synchronization
+- ✅ Read freeze data
+- ⚠️ Write data (partial support)
 
-- ✅ Sincronizzazione dell'ora di trasmissione
+### DLT645-2007 (Primary)
 
-- ✅ Lettura dati con blocco
+| Feature | Status | Description |
+|---------|:------:|-------------|
+| Read data | ✅ | Single/batch address reading |
+| Read subsequent frames | ✅ | Fragmented data reading |
+| Broadcast read address | ✅ | Automatic device discovery |
+| Write data | ✅ | Requires password and operator code |
+| Data field encryption | ✅ | ±0x33 automatic processing |
+| BCD decoding | ✅ | Supports decimal formats |
+| Vendor extensions | ✅ | Compatible with non-standard fields |
 
-- ⚠️ Scrittura dati (parzialmente supportata)
+### Production Ready ✅
 
-2007 (Principale)
+- ✅ Core features complete, can communicate with real meters
+- ✅ Zero-copy optimization, 20-40% performance improvement
+- ✅ Async streaming processing, resource-efficient
+- ⚠️ Needs increased unit test coverage
 
-| Funzione | Stato | Descrizione |
+See [Protocol Completion Document](../../docs/LICENSE/DLT645_协议栈完成度.md) for detailed assessment
 
-|------|:----:|------|
+### Known Limitations
 
-| Lettura dati | ✅ | Lettura singolo indirizzo/batch |
+- Write functionality requires more testing and error handling
+- Unit test coverage is low
+- Multi-device concurrent access needs more verification
 
-| Lettura frame successivi | ✅ | Lettura dati frame |
+## Performance Characteristics
 
-| Lettura indirizzo broadcast | ✅ | Rilevamento automatico dispositivi |
+| Feature | Description | Benefit |
+|---------|-------------|---------|
+| Zero-copy architecture | `Span<byte>` / `ArrayPool` | 20-40% performance gain |
+| Smart response | Fast unicast return, adaptive broadcast | 10x response speed |
+| Async streaming | `IAsyncEnumerable<T>` | Improved memory efficiency |
+| Packet optimization | Circular buffer batch extraction | Improved CPU efficiency |
 
-| Scrittura dati | ✅ | Password e codice operatore obbligatori |
+## Platform Support
 
-| Crittografia/decrittografia dei campi dati | ✅ | Elaborazione automatica ±0x33 |
-
-| Decodifica BCD | ✅ | Supporta formati decimali |
-
-| Estensioni del produttore | ✅ | Compatibile con campi non standard |
-
-### Pronto per la produzione ✅
-
-- ✅ Funzionalità di base complete, in grado di comunicare con contatori elettrici reali
-
-- ✅ Ottimizzazione zero-copy, miglioramento delle prestazioni del 20-40%
-
-- ✅ Elaborazione streaming asincrona, efficiente in termini di risorse
-
-- ⚠️ Richiede una maggiore copertura dei test unitari
-
-Consultare il [Protocol Completeness Document](../../docs/LICENSE/DLT645_Protocol Stack Completeness.md) per una valutazione dettagliata
-
-- La funzionalità di scrittura richiede più test e gestione degli errori
-
-- Bassa copertura dei test unitari
-
-L'accesso simultaneo a più dispositivi richiede più verifiche
-
-## Progetto di esempio
-
-Caratteristiche prestazionali complete
-
-| Caratteristiche | Descrizione | Vantaggi |
-
-|------|------|------|
-
-| Architettura zero-copy | `Span<byte>` / `ArrayPool` | Miglioramento delle prestazioni del 20-40% |
-
-| Risposta intelligente | Ritorno unicast rapido, broadcast adattivo | Velocità di risposta migliorata di 10 volte |
-
-| Streaming asincrono | `IAsyncEnumerable<T>` | Efficienza della memoria migliorata |
-
-| Ottimizzazione dell'unione dei pacchetti | Estrazione batch da buffer circolare | Efficienza della CPU migliorata |
-
-## Supporto piattaforme
-
-| Piattaforma | Versione | Libreria porte seriali |
-
-|------|------|--------|
-
+| Platform | Version | Serial Library |
+|----------|---------|----------------|
 | .NET 6+ | ✅ | RJCP.IO.Ports 3.0.4 |
-
 | .NET Standard | ✅ 2.1 | RJCP.IO.Ports 3.0.4 |
 
-## Progetto di esempio
+## Sample Project
 
-Vedi l'esempio completo su [sample/Dlt645](../../sample/Dlt645)
+See complete example at [sample/Dlt645](../../sample/Dlt645)
 
 ## Roadmap
 
-- [x] Codifica/decodifica campo dati ±0x33
-- [x] Decodificatore BCD
-- [x] Meccanismo di terminazione della risposta intelligente
-- [x] Ottimizzazione Zero-Copy
-- [x] Supporto per l'iniezione di dipendenza
-- [ ] Copertura dei test unitari >70%
-- [ ] Decodificatore di data e ora
-- [ ] Benchmarking delle prestazioni
-- [ ] Documentazione API migliorata
+- [x] Data field ±0x33 encoding/decoding
+- [x] BCD decoder
+- [x] Smart response termination mechanism
+- [x] Zero-copy optimization
+- [x] Dependency injection support
+- [ ] Unit test coverage >70%
+- [ ] Date/time decoder
+- [ ] Performance benchmarks
+- [ ] API documentation improvements
 
-Licenza MIT - Vedi file [LICENSE](../../LICENSE)
+## License
 
-## Contributi
+MIT License - See [LICENSE](../../LICENSE) file
 
-Invitiamo a inviare segnalazioni e pull request!
+## Contributing
 
-## Supporto
+Issues and Pull Requests are welcome!
 
-- Problemi GitHub: https://github.com/woyaodangrapper/RTU_Solution/issues
+## Support
 
-- Documentazione: [docs](../../docs)
+- GitHub Issues: https://github.com/woyaodangrapper/RTU_Solution/issues
+- Documentation: [docs](../../docs)
