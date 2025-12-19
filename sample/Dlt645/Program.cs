@@ -42,5 +42,3 @@ catch (Exception ex)
 }
 
 Console.WriteLine("Hello, World!");
-
-Console.ReadLine();

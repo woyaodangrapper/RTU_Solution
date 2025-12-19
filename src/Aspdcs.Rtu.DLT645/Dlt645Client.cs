@@ -6,6 +6,7 @@ using Aspdcs.Rtu.Contracts.DLT645;
 using Aspdcs.Rtu.Attributes;
 
 
+
 #if NET6_0_OR_GREATER
 
 using RJCP.IO.Ports;
@@ -220,7 +221,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
 
         // 等待返回帧
-        await foreach (var frame in ReceiveFrameAsync(cancellationToken)
+        await foreach (var frame in ReceiveFrameAsync(cancellationToken, buffer.Span.IsBroadcast() ? -1 : 1) // -1 表示广播自适应模式
             .WithCancellation(cancellationToken))
         {
             yield return frame;
@@ -241,7 +242,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     public async IAsyncEnumerable<SemanticValue> ReadAsync(string address, [EnumeratorCancellation] CancellationToken ct = default)
     {
         using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read((uint)Command.EnergyData.ForwardActiveTotalEnergy), effectiveToken)
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read((uint)Command.EnergyData.ForwardActiveTotalEnergy), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -376,11 +377,12 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
 
         // 广播不会等待响应
-        return ReceiveFrameAsync(cancellationToken);
+        return ReceiveFrameAsync(cancellationToken, -1);
     }
 
     private async IAsyncEnumerable<MessageHeader> ReceiveFrameAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken,
+        int expectedResponses = 1,
         byte? continueCommandCode = null, Func<MessageHeader, Task>? continueCallback = null)
     {
         var readTasks = new List<IAsyncEnumerable<MessageHeader>>();
@@ -413,6 +415,11 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         // 启动一个任务来等待所有端口读取结束
         var completionTask = Task.WhenAll(portReadingTasks);
 
+        int receivedCount = 0;
+        bool isCall = expectedResponses == -1;
+        bool hasReceivedFirstResponse = false;
+        DateTime lastResponseTime = DateTime.MinValue;
+
         while (await outputChannel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
         {
             if (outputChannel.Reader.TryRead(out var header))
@@ -423,10 +430,35 @@ public sealed class Dlt645Client : Channel, IDlt645Client
                 {
                     await continueCallback(header).ConfigureAwait(false);
                 }
+
                 yield return header;
+                receivedCount++;
+                lastResponseTime = DateTime.UtcNow;
+
+                // 单播模式：收到期望数量的响应后结束
+                if (!isCall && receivedCount >= expectedResponses)
+                {
+                    yield break;
+                }
+
+                // 广播模式：收到第一个响应，标记并启动自适应超时
+                if (isCall && !hasReceivedFirstResponse)
+                {
+                    hasReceivedFirstResponse = true;
+                }
+            }
+
+            // 广播自适应模式：收到第一个响应后，如果后续超过 Options.Timeout 没有新响应，则结束
+            if (isCall && hasReceivedFirstResponse)
+            {
+                if ((DateTime.UtcNow - lastResponseTime) > Options.Timeout)
+                {
+                    yield break;
+                }
             }
         }
 
+#pragma warning disable CA1031 // 不捕获常规异常类型
         try
         {
             await Task.WhenAll(portReadingTasks).ConfigureAwait(false);
@@ -436,6 +468,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         {
             outputChannel.Writer.TryComplete(ex);
         }
+#pragma warning restore CA1031 // 不捕获常规异常类型
     }
 
 #if NET6_0_OR_GREATER
@@ -577,7 +610,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             frame = Buffer.Read(total);
 
             // 解析数据区
-            if (frame.TryGetData(out byte[] data))
+            if (frame.TryGetData(out var data))
             {
                 MessageHeaderExtensions.DecodeData(data);
             }

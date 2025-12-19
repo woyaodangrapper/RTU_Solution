@@ -207,8 +207,13 @@ public class Channel : IDisposable
         // 清除输出缓冲区（可选，但推荐）
         port.DiscardOutBuffer();
 
-        buffer.TryGetData(out Span<byte> data);
-        MessageHeaderExtensions.EncodeData(data);
+        // 加密数据域
+        if (buffer.TryGetData(out Span<byte> data))
+        {
+            MessageHeaderExtensions.EncodeData(data);
+            // 加密后重新计算校验和
+            MessageHeaderExtensions.UpdateChecksum(buffer);
+        }
 
         port.Write(buffer);
         return buffer.Length;
@@ -263,9 +268,13 @@ public class Channel : IDisposable
         // 清除输出缓冲区
         port.DiscardOutBuffer();
 
-        // 编码数据
+        // 编码数据并重新计算校验和
         if (buffer.TryGetData(out Memory<byte> data))
+        {
             MessageHeaderExtensions.EncodeData(data.Span);
+            // 加密后重新计算校验和
+            MessageHeaderExtensions.UpdateChecksum(buffer.Span);
+        }
 
         await port.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
         await port.FlushAsync(cancellationToken).ConfigureAwait(false);

@@ -26,6 +26,50 @@ internal static class MessageHeaderExtensions
     }
 
     /// <summary>
+    /// 重新计算并更新 DLT645 帧的校验和（用于加密数据后）
+    /// </summary>
+    /// <param name="frame">完整的 DLT645 帧</param>
+    public static void UpdateChecksum(Span<byte> frame)
+    {
+        // 跳过前导符 FE
+        int startCodeIndex = 0;
+        while (startCodeIndex < frame.Length && frame[startCodeIndex] == 0xFE)
+            startCodeIndex++;
+
+        if (frame.Length - startCodeIndex < 12)
+            return; // 帧太短
+
+        if (frame[startCodeIndex] != 0x68)
+            return; // 无效帧
+
+        byte dataLength = frame[startCodeIndex + 9];
+        int checksumIndex = startCodeIndex + 10 + dataLength; // 校验和位置
+
+        if (checksumIndex >= frame.Length)
+            return; // 无效长度
+
+        // 计算校验和：从第一个 68 到数据域末尾
+        byte checksum = 0;
+        for (int i = startCodeIndex; i < checksumIndex; i++)
+            checksum += frame[i];
+
+        // 更新校验和
+        frame[checksumIndex] = checksum;
+    }
+
+
+
+    /// <summary>
+    /// 判断是否为 DL/T645 广播帧（地址域 6 字节全为 0xAA）
+    /// </summary>
+    public static bool IsBroadcast(this ReadOnlySpan<byte> frame)
+    {
+        if (frame.Length < 10)
+            return false;
+        return frame.Slice(1, 6).SequenceEqual(stackalloc byte[] { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA });
+    }
+
+    /// <summary>
     /// 尝试从字节数组中提取完整的 DLT645 帧（处理半包/粘包）
     /// </summary>
     /// <param name="bytes">待解析的字节数组</param>
@@ -125,11 +169,13 @@ internal static class MessageHeaderExtensions
     /// <param name="bytes">包含完整 DLT645 帧的字节数组</param>
     /// <param name="data">输出数据域</param>
     /// <returns>帧结构是否无效</returns>
-    public static bool TryGetData(this byte[] bytes, out byte[] data)
+    public static bool TryGetData(this byte[] bytes, out Span<byte> data)
     {
         ThrowHelper.ThrowIfNull(bytes);
+
+        // 假设内部有从 bytes 中解析 Data 的逻辑，返回 span
         bool valid = TryGetData(bytes.AsSpan(), out var span);
-        data = valid ? span.ToArray() : [];
+        data = valid ? span : [];
         return valid;
     }
 

@@ -6,6 +6,17 @@ namespace Aspdcs.Rtu.DLT645.Serialization;
 
 public class DataDecoder : IDataDecoder
 {
+    /*
+        68 11 11 00 00 00 00 68 11 04 33 33 34 33 D4 16
+        │                    │  │  │  └─────────┘ │  │
+        │                    │  │  │      │       │  └─ 结束符 16H
+        │                    │  │  │      │       └──── 校验和 D4H
+        │                    │  │  │      └──────────── 加密数据域(4字节)
+        │                    │  │  └─────────────────── 数据长度 04H
+        │                    │  └────────────────────── 控制码 11H(读数据)
+        │                    └───────────────────────── 起始符 68H
+        └────────────────────────────────────────────── 地址 68 11 11 00 00 00 00
+     */
     public SemanticValue Decode(ReadOnlySpan<byte> message, [NotNull] DataFormat format)
     {
         message.TryGetData(out var data);
@@ -59,28 +70,48 @@ public class DataDecoder : IDataDecoder
         if (data.IsEmpty)
             throw new ArgumentException("Data cannot be null or empty", nameof(data));
 
+        // data => [00 00 01 00 | 00 00 00 00 | 01] 最后一位是多出来的，非协议标准字符。
+
+        ReadOnlySpan<byte> idSegment = data[..4]; // 标识符域
+        ReadOnlySpan<byte> valueSegment = data.Slice(4, data.Length - format.Length - 1); // 数值域
+        ReadOnlySpan<byte> customSegment = data.Slice(data.Length - 1, 1); // 自定义域
+
+
         int decimalPlaces = DecimalPlaces(format.Format);
 
-        long value = 0;
-        for (int i = data.Length - 1; i >= 0; i--)
+        long numericValue = 0;// 高低位翻转遍历
+        for (int i = valueSegment.Length - 1; i >= 0; i--)
         {
-            byte b = data[i];
+            byte b = valueSegment[i];
 
-            // 去掉 DL/T645 的 +0x33 偏移
-            b = (byte)(b - 0x33);
             byte high = (byte)((b >> 4) & 0x0F);
             byte low = (byte)(b & 0x0F);
             if (high > 9 || low > 9)
                 continue;
 
-            value = value * 100 + high * 10 + low;
+            numericValue = numericValue * 100 + high * 10 + low;
         }
 
         decimal actualValue = decimalPlaces > 0
-            ? value / (decimal)Math.Pow(10, decimalPlaces)
-            : value;
+            ? decimal.Round(numericValue, decimalPlaces)
+            : numericValue;
 
-        return new(actualValue, format.Unit);
+
+
+
+        Span<byte> reversed = stackalloc byte[idSegment.Length];
+        for (int i = 0; i < idSegment.Length; i++)
+            reversed[i] = idSegment[idSegment.Length - 1 - i];
+        // 转成十六进制字符串方便展示标识符和厂家自定义
+#if NET6_0_OR_GREATER
+        string id = Convert.ToHexString(reversed);
+        string custom = Convert.ToHexString(customSegment);
+#else
+        string id = BitConverter.ToString(reversed.ToArray()).Replace("-", "");
+        string custom = BitConverter.ToString(customSegment.ToArray()).Replace("-", "");
+#endif
+
+        return new(id, actualValue, format.Unit, custom);
     }
 
     // 从格式字符串解析小数位

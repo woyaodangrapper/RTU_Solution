@@ -3,16 +3,10 @@ using static Aspdcs.Rtu.DLT645.Serialization.DataFormats;
 
 namespace Aspdcs.Rtu.DLT645.Serialization;
 
-public abstract record SemanticValue;
-public sealed record NumericValue(decimal Value, string Unit) : SemanticValue;
+public abstract record SemanticValue(string Identifier, string? Custom = null);
+public sealed record NumericValue(string Identifier, decimal Value, string Unit, string? Custom = null) : SemanticValue(Identifier, Custom);
 
-public sealed record DataFormat(
- string Name,
- string Unit,
- string Format,
- ValueEncoding Encoding,
- int Length
-);
+public sealed record DataFormat(string Name, string Unit, string Format, ValueEncoding Encoding, int Length);
 
 public static class DataFormats
 {

@@ -11,7 +11,7 @@ public interface IDlt645Client : IContracts
 {
 
     /// <summary>
-    /// 异步写入原始字节数据
+    /// 写入原始字节数据
     /// </summary>
     /// <param name="bytes">字节数组</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -19,7 +19,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<MessageHeader> TryWriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 异步写入原始字节数据（Memory 版本）
+    /// 写入原始字节数据（Memory 版本）
     /// </summary>
     /// <param name="buffer">内存缓冲区</param>
     /// <param name="cancellationToken">取消令牌</param>
@@ -27,7 +27,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<MessageHeader> TryWriteAsync(Memory<byte> buffer, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 异步读取设备地址（广播方式）
+    /// 读取设备地址（广播方式）
     /// </summary>
     /// <param name="cancellationToken">取消令牌</param>
     /// <returns>返回消息头序列</returns>
@@ -48,14 +48,14 @@ public interface IDlt645Client : IContracts
     int Read(string comPort, Span<byte> buffer);
 
     /// <summary>
-    /// 异步写入数据到指定串口
+    /// 写入数据到指定串口
     /// </summary>
     Task<int> WriteAsync(string comPort, byte[] buffer, CancellationToken cancellationToken = default);
     Task<int> WriteAsync(string comPort, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
     Task<int> WriteAsync(string comPort, Memory<byte> buffer, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 异步从指定串口读取数据
+    /// 从指定串口读取数据
     /// </summary>
     Task<int> ReadAsync(string comPort, byte[] buffer, CancellationToken cancellationToken = default);
     Task<int> ReadAsync(string comPort, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
@@ -63,7 +63,7 @@ public interface IDlt645Client : IContracts
 
 
     /// <summary>
-    /// 异步读取设备数据总电能
+    /// 读取设备数据总电能
     /// </summary>
     /// <param name="address">设备地址</param>
     /// <param name="ct">取消令牌</param>
@@ -71,7 +71,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> ReadAsync(string address, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步读取设备数据（字节数组地址）
+    /// 读取设备数据（字节数组地址）
     /// </summary>
     /// <param name="address">设备地址</param>
     /// <param name="dataId">数据标识</param>
@@ -80,7 +80,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> ReadAsync(byte[] address, uint dataId, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步读取设备数据（字符串地址）
+    /// 读取设备数据（字符串地址）
     /// </summary>
     /// <param name="address">设备地址字符串</param>
     /// <param name="dataId">数据标识</param>
@@ -89,7 +89,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> ReadAsync(string address, uint dataId, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步读取设备数据（使用自定义命令码，字节数组地址）
+    /// 读取设备数据（使用自定义命令码，字节数组地址）
     /// </summary>
     /// <param name="command">命令码</param>
     /// <param name="address">设备地址</param>
@@ -99,7 +99,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> ReadAsync(uint command, byte[] address, uint dataId, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步读取设备数据（使用自定义命令码，字符串地址，支持多地址）
+    /// 读取设备数据（使用自定义命令码，字符串地址，支持多地址）
     /// </summary>
     /// <param name="command">命令码</param>
     /// <param name="addresses">设备地址字符串（支持格式化多地址）</param>
@@ -109,7 +109,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> ReadAsync(uint command, string addresses, uint dataId, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步读取后续帧数据
+    /// 读取后续帧数据
     /// </summary>
     /// <param name="address">设备地址</param>
     /// <param name="frameIndex">帧序号</param>
@@ -119,7 +119,7 @@ public interface IDlt645Client : IContracts
 
 
     /// <summary>
-    /// 异步读取后续帧数据
+    /// 读取后续帧数据
     /// </summary>
     /// <param name="addresses">设备地址</param>
     /// <param name="frameIndex">帧序号</param>
@@ -128,7 +128,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> ReadNextAsync(string addresses, byte frameIndex, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步写入设备数据（字节数组地址）
+    /// 写入设备数据（字节数组地址）
     /// </summary>
     /// <param name="address">设备地址</param>
     /// <param name="dataId">数据标识</param>
@@ -140,7 +140,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> WriteAsync(byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步写入设备数据（使用自定义命令码，字节数组地址）
+    /// 写入设备数据（使用自定义命令码，字节数组地址）
     /// </summary>
     /// <param name="command">命令码</param>
     /// <param name="address">设备地址</param>
@@ -153,7 +153,7 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> WriteAsync(uint command, byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步写入设备数据（字符串地址）
+    /// 写入设备数据（字符串地址）
     /// </summary>
     /// <param name="address">设备地址字符串</param>
     /// <param name="dataId">数据标识</param>
@@ -165,14 +165,14 @@ public interface IDlt645Client : IContracts
     IAsyncEnumerable<SemanticValue> WriteAsync(string address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default);
 
     /// <summary>
-    /// 异步写入设备数据（使用自定义命令码，字符串地址，支持多地址）
+    /// 写入设备数据（使用自定义命令码，字符串地址，支持多地址）
     /// </summary>
     /// <param name="command">命令码</param>
     /// <param name="addresses">设备地址字符串（支持格式化多地址）</param>
     /// <param name="dataId">数据标识</param>
     /// <param name="password">密码</param>
     /// <param name="operatorCode">操作者代码</param>
-    /// <param name="payload">有效载荷数据（字节数组版本，用于异步方法兼容）</param>
+    /// <param name="payload">有效载荷数据（字节数组版本，用于方法兼容）</param>
     /// <param name="ct">取消令牌</param>
     /// <returns>返回语义值序列</returns>
     IAsyncEnumerable<SemanticValue> WriteAsync(uint command, string addresses, uint dataId, uint password, uint operatorCode, byte[] payload, CancellationToken ct = default);
