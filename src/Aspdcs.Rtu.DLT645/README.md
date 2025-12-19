@@ -28,24 +28,20 @@ dotnet add package Aspdcs.Rtu.DLT645
 using Aspdcs.Rtu.DLT645;
 using Microsoft.Extensions.Logging;
 
-// 1. 创建客户端
+// 1. 创建客户端（启用自动发现设备）
 var loggerFactory = LoggerFactory.Create(builder => 
     builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
-var options = new ChannelOptions.CreateBuilder("Meter1")
-    .WithChannel("COM5", 2400, Parity.Even)
-    .WithTimeout(TimeSpan.FromSeconds(2))
-    .Build();
+var channel = new ChannelOptions.CreateBuilder("MyChannel")
+    .WithChannel("COM5")
+    .WithLogger(loggerFactory)
+    .Run();
 
-using var client = new Dlt645Client(options, loggerFactory);
-
-// 2. 读取电能数据
-byte[] address = { 0x11, 0x11, 0x00, 0x00, 0x00, 0x00 };
-uint dataId = 0x00010000; // 当前正向有功总电能
-
-await foreach (var value in client.ReadAsync(address, dataId))
+// 2. 读取电能数据（ReadAsync 默认读取正向有功总电能 0x00010000）
+Console.WriteLine("开始读取电表数据（使用内部超时保护）...");
+await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
 {
-    Console.WriteLine($"电能: {value}");
+    Console.WriteLine($"接收数据: {frame}");
 }
 ```
 

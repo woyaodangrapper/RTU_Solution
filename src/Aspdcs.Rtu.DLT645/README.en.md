@@ -28,24 +28,20 @@ dotnet add package Aspdcs.Rtu.DLT645
 using Aspdcs.Rtu.DLT645;
 using Microsoft.Extensions.Logging;
 
-// 1. Create client
+// 1. Create client (with auto-discovery enabled)
 var loggerFactory = LoggerFactory.Create(builder => 
     builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
-var options = new ChannelOptions.CreateBuilder("Meter1")
-    .WithChannel("COM5", 2400, Parity.Even)
-    .WithTimeout(TimeSpan.FromSeconds(2))
-    .Build();
+var channel = new ChannelOptions.CreateBuilder("MyChannel")
+    .WithChannel("COM5")
+    .WithLogger(loggerFactory)
+    .Run();
 
-using var client = new Dlt645Client(options, loggerFactory);
-
-// 2. Read energy data
-byte[] address = { 0x11, 0x11, 0x00, 0x00, 0x00, 0x00 };
-uint dataId = 0x00010000; // Current forward active total energy
-
-await foreach (var value in client.ReadAsync(address, dataId))
+// 2. Read energy data (ReadAsync defaults to forward active total energy 0x00010000)
+Console.WriteLine("Starting read operation (using internal timeout protection)...");
+await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
 {
-    Console.WriteLine($"Energy: {value}");
+    Console.WriteLine($"Received: {frame}");
 }
 ```
 
