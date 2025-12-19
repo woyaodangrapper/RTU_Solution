@@ -1,7 +1,7 @@
 #!/bin/bash
 # NuGet 打包和发布脚本
 # 用法: ./pack.sh [选项]
-# 示例: ./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 --publish
+# 示例: ./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 --publish
 
 set -e
 
@@ -18,10 +18,10 @@ DRY_RUN=false
 
 # 项目配置 - 可以发布的项目列表
 declare -A AVAILABLE_PROJECTS=(
-    ["Asprtu.Rtu"]="../../src/Infrastructures/Asprtu.Rtu/Asprtu.Rtu.csproj"
-    ["Asprtu.Rtu.DLT645"]="../../src/Asprtu.Rtu.DLT645/Asprtu.Rtu.DLT645.csproj"
-    ["Asprtu.Rtu.TcpServer"]="../../src/Asprtu.Rtu.TcpServer/Asprtu.Rtu.TcpServer.csproj"
-    ["Asprtu.Rtu.TcpClient"]="../../src/Asprtu.Rtu.TcpClient/Asprtu.Rtu.TcpClient.csproj"
+    ["Aspdcs.Rtu"]="../../src/Infrastructures/Aspdcs.Rtu/Aspdcs.Rtu.csproj"
+    ["Aspdcs.Rtu.DLT645"]="../../src/Aspdcs.Rtu.DLT645/Aspdcs.Rtu.DLT645.csproj"
+    ["Aspdcs.Rtu.TcpServer"]="../../src/Aspdcs.Rtu.TcpServer/Aspdcs.Rtu.TcpServer.csproj"
+    ["Aspdcs.Rtu.TcpClient"]="../../src/Aspdcs.Rtu.TcpClient/Aspdcs.Rtu.TcpClient.csproj"
 )
 
 # 颜色定义
@@ -55,19 +55,19 @@ NuGet 打包和发布脚本
 
 示例:
   # 打包单个项目
-  ./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0
+  ./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0
 
   # 打包多个项目
-  ./pack.sh -p Asprtu.Rtu -p Asprtu.Rtu.DLT645 -v 1.2.0
+  ./pack.sh -p Aspdcs.Rtu -p Aspdcs.Rtu.DLT645 -v 1.2.0
 
   # 打包所有项目
   ./pack.sh -a -v 1.0.0
 
   # 打包预览版
-  ./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 -s beta.1
+  ./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 -s beta.1
 
   # 打包并发布
-  ./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 --publish
+  ./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 --publish
 
   # 使用自定义 API Key 发布
   ./pack.sh -a -v 1.0.0 --publish --api-key YOUR_API_KEY
@@ -237,8 +237,8 @@ pack_project() {
         "--include-source"
         "-p:SymbolPackageFormat=snupkg"
         "-p:PackageId=$project_name"
-        "-p:Authors=Asprtu"
-        "-p:Company=Asprtu"
+        "-p:Authors=Aspdcs"
+        "-p:Company=Aspdcs"
         "-p:Product=$project_name"
         "-p:PackageProjectUrl=https://github.com/woyaodangrapper/RTU_Solution"
         "-p:RepositoryUrl=https://github.com/woyaodangrapper/RTU_Solution"

@@ -17,23 +17,23 @@ chmod +x build/nuget/pack.sh
 cd build/nuget
 
 # 打包单个项目
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0
 
 # 打包所有项目
 ./pack.sh -a -v 1.0.0
 
 # 打包并发布
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 --publish
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 --publish
 ```
 
 ## 可用项目
 
 当前支持打包的项目：
 
-- `Asprtu.Rtu` - 基础设施核心库
-- `Asprtu.Rtu.DLT645` - DLT645 协议实现
-- `Asprtu.Rtu.TcpServer` - TCP 服务器
-- `Asprtu.Rtu.TcpClient` - TCP 客户端
+- `Aspdcs.Rtu` - 基础设施核心库
+- `Aspdcs.Rtu.DLT645` - DLT645 协议实现
+- `Aspdcs.Rtu.TcpServer` - TCP 服务器
+- `Aspdcs.Rtu.TcpClient` - TCP 客户端
 
 ## 命令行选项
 
@@ -68,17 +68,17 @@ cd build/nuget
 ### 示例 1: 打包单个项目（本地测试）
 
 ```bash
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0
 ```
 
 这将创建：
-- `nupkgs/Asprtu.Rtu.DLT645.1.0.0.nupkg` - 主包
-- `nupkgs/Asprtu.Rtu.DLT645.1.0.0.snupkg` - 符号包
+- `nupkgs/Aspdcs.Rtu.DLT645.1.0.0.nupkg` - 主包
+- `nupkgs/Aspdcs.Rtu.DLT645.1.0.0.snupkg` - 符号包
 
 ### 示例 2: 打包多个项目
 
 ```bash
-./pack.sh -p Asprtu.Rtu -p Asprtu.Rtu.DLT645 -v 1.2.0
+./pack.sh -p Aspdcs.Rtu -p Aspdcs.Rtu.DLT645 -v 1.2.0
 ```
 
 ### 示例 3: 打包所有项目
@@ -90,7 +90,7 @@ cd build/nuget
 ### 示例 4: 打包预览版本
 
 ```bash
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 -s beta.1
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 -s beta.1
 ```
 
 这将生成版本号为 `1.0.0-beta.1` 的包。
@@ -106,10 +106,10 @@ cd build/nuget
 ```bash
 # 方式 1: 使用环境变量
 export NUGET_API_KEY="your-api-key-here"
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 --publish
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 --publish
 
 # 方式 2: 使用命令行参数
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 --publish --api-key "your-api-key-here"
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 --publish --api-key "your-api-key-here"
 ```
 
 ### 示例 7: 发布到私有 NuGet 源
@@ -131,7 +131,7 @@ export NUGET_API_KEY="your-api-key-here"
 ### 示例 9: 指定输出目录
 
 ```bash
-./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0 -o ./my-packages
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0 -o ./my-packages
 ```
 
 ## 工作流程建议
@@ -140,7 +140,7 @@ export NUGET_API_KEY="your-api-key-here"
 
 ```bash
 # 打包本地测试版本
-./pack.sh -p Asprtu.Rtu.DLT645 -v 0.1.0 -s dev.$(date +%Y%m%d%H%M)
+./pack.sh -p Aspdcs.Rtu.DLT645 -v 0.1.0 -s dev.$(date +%Y%m%d%H%M)
 ```
 
 ### 测试阶段
@@ -187,14 +187,14 @@ $env:NUGET_API_KEY="your-api-key-here"
 
 ```
 nupkgs/
-├── Asprtu.Rtu.1.0.0.nupkg
-├── Asprtu.Rtu.1.0.0.snupkg
-├── Asprtu.Rtu.DLT645.1.0.0.nupkg
-├── Asprtu.Rtu.DLT645.1.0.0.snupkg
-├── Asprtu.Rtu.TcpServer.1.0.0.nupkg
-├── Asprtu.Rtu.TcpServer.1.0.0.snupkg
-├── Asprtu.Rtu.TcpClient.1.0.0.nupkg
-└── Asprtu.Rtu.TcpClient.1.0.0.snupkg
+├── Aspdcs.Rtu.1.0.0.nupkg
+├── Aspdcs.Rtu.1.0.0.snupkg
+├── Aspdcs.Rtu.DLT645.1.0.0.nupkg
+├── Aspdcs.Rtu.DLT645.1.0.0.snupkg
+├── Aspdcs.Rtu.TcpServer.1.0.0.nupkg
+├── Aspdcs.Rtu.TcpServer.1.0.0.snupkg
+├── Aspdcs.Rtu.TcpClient.1.0.0.nupkg
+└── Aspdcs.Rtu.TcpClient.1.0.0.snupkg
 ```
 
 - `.nupkg` - 主 NuGet 包
@@ -205,8 +205,8 @@ nupkgs/
 脚本会自动设置以下包元数据（不修改项目文件）：
 
 - **PackageId**: 项目名称
-- **Authors**: Asprtu
-- **Company**: Asprtu
+- **Authors**: Aspdcs
+- **Company**: Aspdcs
 - **Product**: 项目名称
 - **PackageProjectUrl**: https://github.com/woyaodangrapper/RTU_Solution
 - **RepositoryUrl**: https://github.com/woyaodangrapper/RTU_Solution
@@ -290,7 +290,7 @@ declare -A AVAILABLE_PROJECTS=(
 
 ```bash
 # 在 pack_project() 函数中
-if [ "$project_name" = "Asprtu.Rtu.DLT645" ]; then
+if [ "$project_name" = "Aspdcs.Rtu.DLT645" ]; then
     pack_args+=("-p:Description=DLT645 protocol implementation")
 fi
 ```

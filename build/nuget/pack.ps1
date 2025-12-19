@@ -1,6 +1,6 @@
 ﻿# NuGet 打包和发布脚本 (PowerShell 版本)
 # 用法: .\pack.ps1 [选项]
-# 示例: .\pack.ps1 -Project Asprtu.Rtu.DLT645 -Version 1.0.0 -Publish
+# 示例: .\pack.ps1 -Project Aspdcs.Rtu.DLT645 -Version 1.0.0 -Publish
 
 [CmdletBinding()]
 param(
@@ -50,10 +50,10 @@ $ErrorActionPreference = "Stop"
 
 # 项目配置
 $AvailableProjects = @{
-    "Asprtu.Rtu" = "..\..\src\Infrastructures\Asprtu.Rtu\Asprtu.Rtu.csproj"
-    "Asprtu.Rtu.DLT645" = "..\..\src\Asprtu.Rtu.DLT645\Asprtu.Rtu.DLT645.csproj"
-    "Asprtu.Rtu.TcpServer" = "..\..\src\Asprtu.Rtu.TcpServer\Asprtu.Rtu.TcpServer.csproj"
-    "Asprtu.Rtu.TcpClient" = "..\..\src\Asprtu.Rtu.TcpClient\Asprtu.Rtu.TcpClient.csproj"
+    "Aspdcs.Rtu" = "..\..\src\Infrastructures\Aspdcs.Rtu\Aspdcs.Rtu.csproj"
+    "Aspdcs.Rtu.DLT645" = "..\..\src\Aspdcs.Rtu.DLT645\Aspdcs.Rtu.DLT645.csproj"
+    "Aspdcs.Rtu.TcpServer" = "..\..\src\Aspdcs.Rtu.TcpServer\Aspdcs.Rtu.TcpServer.csproj"
+    "Aspdcs.Rtu.TcpClient" = "..\..\src\Aspdcs.Rtu.TcpClient\Aspdcs.Rtu.TcpClient.csproj"
 }
 
 # 日志函数
@@ -106,19 +106,19 @@ NuGet 打包和发布脚本 (PowerShell)
 
 示例:
   # 打包单个项目
-  .\pack.ps1 -Project Asprtu.Rtu.DLT645 -Version 1.0.0
+  .\pack.ps1 -Project Aspdcs.Rtu.DLT645 -Version 1.0.0
 
   # 打包多个项目
-  .\pack.ps1 -Project Asprtu.Rtu,Asprtu.Rtu.DLT645 -Version 1.2.0
+  .\pack.ps1 -Project Aspdcs.Rtu,Aspdcs.Rtu.DLT645 -Version 1.2.0
 
   # 打包所有项目
   .\pack.ps1 -All -Version 1.0.0
 
   # 打包预览版
-  .\pack.ps1 -Project Asprtu.Rtu.DLT645 -Version 1.0.0 -Suffix beta.1
+  .\pack.ps1 -Project Aspdcs.Rtu.DLT645 -Version 1.0.0 -Suffix beta.1
 
   # 打包并发布
-  .\pack.ps1 -Project Asprtu.Rtu.DLT645 -Version 1.0.0 -Publish
+  .\pack.ps1 -Project Aspdcs.Rtu.DLT645 -Version 1.0.0 -Publish
 
 "@
 }
@@ -231,8 +231,8 @@ function Invoke-PackProject {
         "--include-source",
         "-p:SymbolPackageFormat=snupkg",
         "-p:PackageId=$ProjectName",
-        "-p:Authors=Asprtu",
-        "-p:Company=Asprtu",
+        "-p:Authors=Aspdcs",
+        "-p:Company=Aspdcs",
         "-p:Product=$ProjectName",
         "-p:PackageProjectUrl=https://github.com/woyaodangrapper/RTU_Solution",
         "-p:RepositoryUrl=https://github.com/woyaodangrapper/RTU_Solution",

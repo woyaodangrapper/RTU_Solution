@@ -2,9 +2,9 @@
 # 此文件用于定义包的通用配置，可以根据需要自定义
 
 # 包信息配置
-PACKAGE_AUTHORS="Asprtu"
-PACKAGE_COMPANY="Asprtu"
-PACKAGE_COPYRIGHT="Copyright ? Asprtu 2025"
+PACKAGE_AUTHORS="Aspdcs"
+PACKAGE_COMPANY="Aspdcs"
+PACKAGE_COPYRIGHT="Copyright ? Aspdcs 2025"
 PACKAGE_LICENSE="MIT"
 PACKAGE_TAGS="rtu;dlt645;tcp;protocol;serial;modbus"
 
@@ -42,16 +42,16 @@ VERSION_NOTES_TEMPLATE="Release notes for version {VERSION}"
 
 # 项目描述
 declare -A PROJECT_DESCRIPTIONS=(
-    ["Asprtu.Rtu"]="RTU core infrastructure library providing base functionality for communication protocols"
-    ["Asprtu.Rtu.DLT645"]="Implementation of DLT645 power meter communication protocol"
-    ["Asprtu.Rtu.TcpServer"]="TCP server implementation for RTU communication"
-    ["Asprtu.Rtu.TcpClient"]="TCP client implementation for RTU communication"
+    ["Aspdcs.Rtu"]="RTU core infrastructure library providing base functionality for communication protocols"
+    ["Aspdcs.Rtu.DLT645"]="Implementation of DLT645 power meter communication protocol"
+    ["Aspdcs.Rtu.TcpServer"]="TCP server implementation for RTU communication"
+    ["Aspdcs.Rtu.TcpClient"]="TCP client implementation for RTU communication"
 )
 
 # 项目特定的标签
 declare -A PROJECT_TAGS=(
-    ["Asprtu.Rtu"]="core;infrastructure"
-    ["Asprtu.Rtu.DLT645"]="dlt645;power-meter;protocol"
-    ["Asprtu.Rtu.TcpServer"]="tcp;server;networking"
-    ["Asprtu.Rtu.TcpClient"]="tcp;client;networking"
+    ["Aspdcs.Rtu"]="core;infrastructure"
+    ["Aspdcs.Rtu.DLT645"]="dlt645;power-meter;protocol"
+    ["Aspdcs.Rtu.TcpServer"]="tcp;server;networking"
+    ["Aspdcs.Rtu.TcpClient"]="tcp;client;networking"
 )

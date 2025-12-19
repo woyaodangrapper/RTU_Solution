@@ -26,7 +26,7 @@ read -p "请输入选项 [1-6]: " choice
 case $choice in
     1)
         echo -e "${YELLOW}打包 DLT645 项目...${NC}"
-        ./pack.sh -p Asprtu.Rtu.DLT645 -v 1.0.0
+        ./pack.sh -p Aspdcs.Rtu.DLT645 -v 1.0.0
         ;;
     2)
         echo -e "${YELLOW}打包所有项目...${NC}"
@@ -35,7 +35,7 @@ case $choice in
     3)
         read -p "请输入版本号 (例如 1.0.0): " version
         echo -e "${YELLOW}打包并发布 DLT645 项目...${NC}"
-        ./pack.sh -p Asprtu.Rtu.DLT645 -v "$version" --publish
+        ./pack.sh -p Aspdcs.Rtu.DLT645 -v "$version" --publish
         ;;
     4)
         read -p "请输入版本号 (例如 1.0.0): " version
