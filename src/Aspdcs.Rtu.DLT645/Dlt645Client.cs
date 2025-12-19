@@ -62,7 +62,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    public async IAsyncEnumerable<SemanticValue> TrySendAsync(byte code, byte[] addresses, byte[]? data = null,
+    internal async IAsyncEnumerable<SemanticValue> TrySendAsync(byte code, byte[] addresses, byte[]? data = null,
          [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         MessageHeader messageHeader = new(
@@ -70,7 +70,9 @@ public sealed class Dlt645Client : Channel, IDlt645Client
            control: code,
            bytes: data
         );
-        DataFormats.TryGet(code, out var def);
+        DataFormats.TryGet(data, out var def);
+
+        ThrowHelper.ThrowIfNull(def);
 
         var length = messageHeader.ToBytes(out var messageBytes);
 
@@ -83,7 +85,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    public async IAsyncEnumerable<T> TrySendAsync<T>(byte code, byte[] addresses, byte[]? data = null,
+    internal async IAsyncEnumerable<T> TrySendAsync<T>(byte code, byte[] addresses, byte[]? data = null,
          [EnumeratorCancellation] CancellationToken cancellationToken = default) where T : SemanticValue
     {
         MessageHeader messageHeader = new(
@@ -91,7 +93,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             control: code,
             bytes: data
         );
-        DataFormats.TryGet(code, out var def);
+        DataFormats.TryGet(data, out var def);
 
         ThrowHelper.ThrowIfNull(def);
 
@@ -106,10 +108,10 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    public async IAsyncEnumerable<T> TrySendAsync<T>(MessageHeader messageHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    internal async IAsyncEnumerable<T> TrySendAsync<T>(MessageHeader messageHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where T : SemanticValue
     {
-        DataFormats.TryGet(messageHeader.Code, out var def);
+        DataFormats.TryGet(messageHeader.Data, out var def);
 
         ThrowHelper.ThrowIfNull(def);
 
@@ -124,7 +126,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    public async IAsyncEnumerable<T> TrySendAsync<T>([NotNull] IEnumerable<MessageHeader> messages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    internal async IAsyncEnumerable<T> TrySendAsync<T>([NotNull] IEnumerable<MessageHeader> messages, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         where T : SemanticValue
     {
         foreach (var message in messages)
@@ -132,7 +134,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             await Task.Delay(35, cancellationToken)
                 .ConfigureAwait(true); // 遵循 DL/T 645 协议的最小帧间隔时间 30ms，加一点余量
 
-            DataFormats.TryGet(message.Code, out var def);
+            DataFormats.TryGet(message.Data, out var def);
 
             ThrowHelper.ThrowIfNull(def);
 
@@ -145,7 +147,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
     }
 
-    public IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
+    internal IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
         where T : Enum
     {
         var type = typeof(T);
@@ -154,8 +156,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         return EmptyAsync<SemanticValue>();
     }
 
-    public async IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, string addresses, byte[]? data = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    internal async IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, string addresses, byte[]? data = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
          where T : Enum
     {
         var type = typeof(T);
@@ -223,6 +224,123 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             .WithCancellation(cancellationToken))
         {
             yield return frame;
+        }
+    }
+
+
+    public async IAsyncEnumerable<SemanticValue> ReadAsync(byte[] address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read(dataId), effectiveToken)
+            .ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+    public async IAsyncEnumerable<SemanticValue> ReadAsync(string address, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read((uint)Command.EnergyData.ForwardActiveTotalEnergy), effectiveToken)
+            .ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+    public async IAsyncEnumerable<SemanticValue> ReadAsync(string address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read(dataId), effectiveToken)
+            .ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+    public async IAsyncEnumerable<SemanticValue> ReadAsync(uint command, byte[] address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        await foreach (var item in TrySendAsync<SemanticValue>(Convert.ToByte(command), address, DataBuilder.Read(dataId), effectiveToken)
+            .ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+    public async IAsyncEnumerable<SemanticValue> ReadAsync(uint command, string addresses, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var commandByte = Convert.ToByte(command);
+        var dataBytes = DataBuilder.Read(dataId);
+        foreach (var address in AddressFormatExtension.FormatAddresses(addresses))
+        {
+            await foreach (var item in TrySendAsync(commandByte, address, dataBytes, ct)
+                .ConfigureAwait(false))
+            {
+                yield return item;
+            }
+        }
+    }
+
+    public async IAsyncEnumerable<SemanticValue> ReadNextAsync(byte[] address, byte frameIndex, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        await foreach (var item in TrySendAsync(Command.Code.ReadSubsequentData, address, DataBuilder.ReadNext(frameIndex), effectiveToken)
+            .ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+    public async IAsyncEnumerable<SemanticValue> ReadNextAsync(string addresses, byte frameIndex, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        await foreach (var item in TrySendAsync(Command.Code.ReadSubsequentData, addresses, DataBuilder.ReadNext(frameIndex), effectiveToken)
+            .ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
+
+    public IAsyncEnumerable<SemanticValue> WriteAsync(byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        return TrySendAsync(Command.Code.WriteData, address, DataBuilder.Write(dataId, password, operatorCode, payload), effectiveToken);
+    }
+
+    public IAsyncEnumerable<SemanticValue> WriteAsync(uint command, byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        return TrySendAsync(Convert.ToByte(command), address, DataBuilder.Write(dataId, password, operatorCode, payload), effectiveToken);
+    }
+
+    public IAsyncEnumerable<SemanticValue> WriteAsync(string address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default)
+    {
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+        return TrySendAsync(Command.Code.WriteData, address, DataBuilder.Write(dataId, password, operatorCode, payload), effectiveToken);
+    }
+
+    public async IAsyncEnumerable<SemanticValue> WriteAsync(uint command, string addresses, uint dataId, uint password, uint operatorCode, byte[] payload,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var commandByte = Convert.ToByte(command);
+        var dataBytes = DataBuilder.Write(dataId, password, operatorCode, payload);
+        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
+
+        foreach (var address in AddressFormatExtension.FormatAddresses(addresses))
+        {
+            MessageHeader messageHeader = new(
+                address: address,
+                control: commandByte,
+                bytes: dataBytes
+            );
+
+            await foreach (var item in TrySendAsync(commandByte, address, dataBytes, effectiveToken)
+                .ConfigureAwait(false))
+            {
+                yield return item;
+            }
         }
     }
 
@@ -342,9 +460,14 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             await Task.Delay(1, stoppingToken)
                 .ConfigureAwait(true); // 防止 tight loop
             int bytesRead;
+
+            // 为每次读取操作创建带超时的链接令牌，防止无限等待
+            using var timeoutCts = new CancellationTokenSource(timeSpan);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, timeoutCts.Token);
+
             try
             {
-                bytesRead = await ReadAsync(port.PortName, recvBuffer, 0, recvBuffer.Length, stoppingToken)
+                bytesRead = await ReadAsync(port.PortName, recvBuffer, 0, recvBuffer.Length, linkedCts.Token)
                     .ConfigureAwait(false); // 1024
             }
             catch (TimeoutException)
@@ -353,7 +476,10 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             }
             catch (OperationCanceledException)
             {
-                yield break;
+                // 如果是超时令牌取消，继续下一次循环；如果是 stoppingToken 取消，退出
+                if (stoppingToken.IsCancellationRequested)
+                    yield break;
+                continue;
             }
             catch (IOException ex)
             {

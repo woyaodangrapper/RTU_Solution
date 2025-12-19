@@ -1,6 +1,5 @@
 using Aspdcs.Rtu.Contracts;
 using Aspdcs.Rtu.Contracts.DLT645;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Aspdcs.Rtu.DLT645.Contracts;
 
@@ -10,71 +9,6 @@ namespace Aspdcs.Rtu.DLT645.Contracts;
 /// </summary>
 public interface IDlt645Client : IContracts
 {
-    /// <summary>
-    /// 异步发送 DLT645 命令并返回语义值
-    /// </summary>
-    /// <param name="code">控制码</param>
-    /// <param name="addresses">设备地址（6 字节）</param>
-    /// <param name="data">可选数据域</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>返回解析后的语义值序列</returns>
-    IAsyncEnumerable<SemanticValue> TrySendAsync(byte code, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// 异步发送 DLT645 命令并返回指定类型的语义值
-    /// </summary>
-    /// <typeparam name="T">语义值类型</typeparam>
-    /// <param name="code">控制码</param>
-    /// <param name="addresses">设备地址（6 字节）</param>
-    /// <param name="data">可选数据域</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>返回解析后的指定类型语义值序列</returns>
-    IAsyncEnumerable<T> TrySendAsync<T>(byte code, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
-        where T : SemanticValue;
-
-    /// <summary>
-    /// 异步发送 DLT645 消息头并返回指定类型的语义值
-    /// </summary>
-    /// <typeparam name="T">语义值类型</typeparam>
-    /// <param name="messageHeader">消息头</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>返回解析后的指定类型语义值序列</returns>
-    IAsyncEnumerable<T> TrySendAsync<T>(MessageHeader messageHeader, CancellationToken cancellationToken = default)
-        where T : SemanticValue;
-
-    /// <summary>
-    /// 异步批量发送多个 DLT645 消息头并返回指定类型的语义值
-    /// </summary>
-    /// <typeparam name="T">语义值类型</typeparam>
-    /// <param name="messages">消息头集合</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>返回解析后的指定类型语义值序列</returns>
-    IAsyncEnumerable<T> TrySendAsync<T>([NotNull] IEnumerable<MessageHeader> messages, CancellationToken cancellationToken = default)
-        where T : SemanticValue;
-
-    /// <summary>
-    /// 异步发送枚举命令
-    /// </summary>
-    /// <typeparam name="T">命令枚举类型</typeparam>
-    /// <param name="command">枚举命令值</param>
-    /// <param name="addresses">设备地址（6 字节）</param>
-    /// <param name="data">可选数据域</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>返回语义值序列</returns>
-    IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, byte[] addresses, byte[]? data = null, CancellationToken cancellationToken = default)
-        where T : Enum;
-
-    /// <summary>
-    /// 异步发送枚举命令
-    /// </summary>
-    /// <typeparam name="T">命令枚举类型</typeparam>
-    /// <param name="command">枚举命令值</param>
-    /// <param name="addresses">设备地址（6 字节）</param>
-    /// <param name="data">可选数据域</param>
-    /// <param name="cancellationToken">取消令牌</param>
-    /// <returns>返回语义值序列</returns>
-    IAsyncEnumerable<SemanticValue> TrySendAsync<T>(T command, string addresses, byte[]? data = null, CancellationToken cancellationToken = default)
-        where T : Enum;
 
     /// <summary>
     /// 异步写入原始字节数据
@@ -126,4 +60,121 @@ public interface IDlt645Client : IContracts
     Task<int> ReadAsync(string comPort, byte[] buffer, CancellationToken cancellationToken = default);
     Task<int> ReadAsync(string comPort, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default);
     Task<int> ReadAsync(string comPort, Memory<byte> buffer, CancellationToken cancellationToken = default);
+
+
+    /// <summary>
+    /// 异步读取设备数据总电能
+    /// </summary>
+    /// <param name="address">设备地址</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync(string address, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步读取设备数据（字节数组地址）
+    /// </summary>
+    /// <param name="address">设备地址</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync(byte[] address, uint dataId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步读取设备数据（字符串地址）
+    /// </summary>
+    /// <param name="address">设备地址字符串</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync(string address, uint dataId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步读取设备数据（使用自定义命令码，字节数组地址）
+    /// </summary>
+    /// <param name="command">命令码</param>
+    /// <param name="address">设备地址</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync(uint command, byte[] address, uint dataId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步读取设备数据（使用自定义命令码，字符串地址，支持多地址）
+    /// </summary>
+    /// <param name="command">命令码</param>
+    /// <param name="addresses">设备地址字符串（支持格式化多地址）</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync(uint command, string addresses, uint dataId, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步读取后续帧数据
+    /// </summary>
+    /// <param name="address">设备地址</param>
+    /// <param name="frameIndex">帧序号</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadNextAsync(byte[] address, byte frameIndex, CancellationToken ct = default);
+
+
+    /// <summary>
+    /// 异步读取后续帧数据
+    /// </summary>
+    /// <param name="addresses">设备地址</param>
+    /// <param name="frameIndex">帧序号</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadNextAsync(string addresses, byte frameIndex, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步写入设备数据（字节数组地址）
+    /// </summary>
+    /// <param name="address">设备地址</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="password">密码</param>
+    /// <param name="operatorCode">操作者代码</param>
+    /// <param name="payload">有效载荷数据</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> WriteAsync(byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步写入设备数据（使用自定义命令码，字节数组地址）
+    /// </summary>
+    /// <param name="command">命令码</param>
+    /// <param name="address">设备地址</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="password">密码</param>
+    /// <param name="operatorCode">操作者代码</param>
+    /// <param name="payload">有效载荷数据</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> WriteAsync(uint command, byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步写入设备数据（字符串地址）
+    /// </summary>
+    /// <param name="address">设备地址字符串</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="password">密码</param>
+    /// <param name="operatorCode">操作者代码</param>
+    /// <param name="payload">有效载荷数据</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> WriteAsync(string address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default);
+
+    /// <summary>
+    /// 异步写入设备数据（使用自定义命令码，字符串地址，支持多地址）
+    /// </summary>
+    /// <param name="command">命令码</param>
+    /// <param name="addresses">设备地址字符串（支持格式化多地址）</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="password">密码</param>
+    /// <param name="operatorCode">操作者代码</param>
+    /// <param name="payload">有效载荷数据（字节数组版本，用于异步方法兼容）</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> WriteAsync(uint command, string addresses, uint dataId, uint password, uint operatorCode, byte[] payload, CancellationToken ct = default);
+
 }

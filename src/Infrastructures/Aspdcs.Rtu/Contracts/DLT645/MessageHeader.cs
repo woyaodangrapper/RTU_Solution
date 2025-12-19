@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace Aspdcs.Rtu.Contracts.DLT645;
@@ -173,3 +174,96 @@ public struct MessageHeader : IEquatable<MessageHeader>
     public static bool operator ==(MessageHeader left, MessageHeader right) => left.Equals(right);
     public static bool operator !=(MessageHeader left, MessageHeader right) => !(left == right);
 }
+
+public static class DataBuilder
+{
+    /// <summary>
+    /// 14H —— 写数据
+    /// DATA = 数据标识(4) + 密码(4) + 操作者代码(4) + 数据内容(m)
+    /// </summary>
+    public static byte[] Write(
+        uint dataId,
+        uint password,
+        uint operatorCode,
+        ReadOnlySpan<byte> payload)
+    {
+        var buffer = new byte[12 + payload.Length];
+
+        BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(0, 4), dataId);
+        BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(4, 4), password);
+        BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(8, 4), operatorCode);
+
+        payload.CopyTo(buffer.AsSpan(12));
+
+        return buffer;
+    }
+
+    /// <summary>
+    /// 11H —— 读数据请求
+    /// DATA = 数据标识(4) [+ 帧序号(1)]
+    /// </summary>
+    public static byte[] Read(
+        uint dataId,
+        byte? frameIndex = null)
+    {
+        if (frameIndex is null)
+        {
+            var buffer = new byte[4];
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer, dataId);
+            return buffer;
+        }
+
+        var bufferWithIndex = new byte[5];
+        BinaryPrimitives.WriteUInt32LittleEndian(bufferWithIndex.AsSpan(0, 4), dataId);
+        bufferWithIndex[4] = frameIndex.Value;
+        return bufferWithIndex;
+    }
+
+    /// <summary>
+    /// 12H —— 读后续数据
+    /// DATA = 帧序号(1)
+    /// </summary>
+    public static byte[] ReadNext(byte frameIndex)
+        => [frameIndex];
+
+}
+
+
+// ========================== 数据命令说明 ==========================
+//
+// 写数据（14H）
+// 数据域结构：
+//   数据标识        4B
+//   密码            4B
+//   操作者代码      4B
+//   数据内容        mB（长度可变）
+//
+// 读数据请求（11H）
+// 数据域结构：
+//   数据标识        4B
+//   （可选）块/帧序号 1B
+//
+// 读后续数据（12H）
+// 数据域结构：
+//   帧序号          1B
+//
+// ==================================================================
+
+/* Offset | 字段名       | 大小 | 用途
+---------|--------------|------|-------------------------
+0        | DataId        | 4B   | 数据标识
+4        | Password      | 4B   | 密码 / 鉴权码
+8        | OperatorCode  | 4B   | 操作者代码
+12       | Payload       | mB   | 实际写入的数据内容
+*/
+
+/* Offset | 字段名       | 大小 | 用途
+---------|--------------|------|-------------------------
+0        | DataId        | 4B   | 数据标识
+4        | FrameIndex    | 1B   | （可选）块/帧序号
+*/
+
+/* Offset | 字段名       | 大小 | 用途
+---------|--------------|------|-------------------------
+0        | FrameIndex    | 1B   | 请求的后续数据帧序号
+*/

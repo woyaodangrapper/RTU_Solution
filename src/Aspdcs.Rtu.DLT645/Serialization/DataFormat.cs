@@ -1,4 +1,5 @@
-﻿using static Aspdcs.Rtu.DLT645.Serialization.DataFormats;
+﻿using System.Buffers.Binary;
+using static Aspdcs.Rtu.DLT645.Serialization.DataFormats;
 
 namespace Aspdcs.Rtu.DLT645.Serialization;
 
@@ -149,7 +150,21 @@ public static class DataFormats
 
                 // 默认未知格式
             };
-
+    /// <summary>
+    /// 从ID读取数据格式定义
+    /// </summary>
+    /// <param name="di"></param>
+    /// <param name="def"></param>
+    /// <returns></returns>
     public static bool TryGet(uint di, out DataFormat? def)
         => _map.TryGetValue(di, out def);
+
+    /// <summary>
+    /// 从数据域的ID读取数据格式定义
+    /// </summary>
+    /// <param name="data"></param>
+    /// <param name="def"></param>
+    /// <returns></returns>
+    public static bool TryGet(ReadOnlySpan<byte> data, out DataFormat? def)
+        => _map.TryGetValue(BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(0, 4)), out def);
 }
