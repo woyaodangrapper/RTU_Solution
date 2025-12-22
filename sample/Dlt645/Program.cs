@@ -21,21 +21,11 @@ await foreach (var address in channel.TryReadAddressAsync())
 {
     Console.WriteLine($"addresses: {address}");
 }
-try
+
+Console.WriteLine("Starting read operation without CancellationToken (using internal timeout protection)...");
+await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
 {
-    Console.WriteLine("Starting read operation without CancellationToken (using internal timeout protection)...");
-    await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
-    {
-        Console.WriteLine($"Received: {frame}");
-    }
-}
-catch (OperationCanceledException)
-{
-    Console.WriteLine("Operation timed out (internal timeout protection worked!)");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"Caught exception: {ex.GetType().Name}: {ex.Message}");
+    Console.WriteLine($"Received: {frame}");
 }
 
 

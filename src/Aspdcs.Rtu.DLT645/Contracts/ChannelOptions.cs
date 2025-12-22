@@ -261,8 +261,8 @@ public sealed class CreateBuilder
     /// <summary>
     /// 使用指定的帧的最大长度 。
     /// </summary>
-    /// <param name="maxFrameLength">最大长度,协议标准 216 字节 (L=200)/param>
-    /// <returns>当前构建器实例。</returns>
+    /// <param name="maxFrameLength">最大长度,协议标准 216 字节 (L=200)</param>
+    /// <returns>当前构建器实例</returns>
     public CreateBuilder WithMaxLength(int maxFrameLength)
     {
         ThrowHelper.ThrowIfLessThan(maxFrameLength, 1, nameof(maxFrameLength));

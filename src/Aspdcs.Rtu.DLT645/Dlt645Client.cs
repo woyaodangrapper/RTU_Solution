@@ -27,6 +27,35 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     private readonly DataDecoder _decoder = new();
 
+    // LoggerMessage 委托，用于高性能日志记录
+    private static readonly Action<ILogger, Exception?> LogNoOpenSerialPorts =
+        LoggerMessage.Define(LogLevel.Error, new EventId(1, nameof(LogNoOpenSerialPorts)), 
+            "No open serial ports available.");
+
+    private static readonly Action<ILogger, Exception> LogOperationCanceled =
+        LoggerMessage.Define(LogLevel.Error, new EventId(2, nameof(LogOperationCanceled)), 
+            "Operation was canceled while sending broadcast frame");
+
+    private static readonly Action<ILogger, Exception> LogIOError =
+        LoggerMessage.Define(LogLevel.Error, new EventId(3, nameof(LogIOError)), 
+            "IO error occurred while sending broadcast frame");
+
+    private static readonly Action<ILogger, Exception> LogInvalidOperation =
+        LoggerMessage.Define(LogLevel.Error, new EventId(4, nameof(LogInvalidOperation)), 
+            "Invalid operation while sending broadcast frame");
+
+    private static readonly Action<ILogger, int, int, Exception> LogBroadcastRetry =
+        LoggerMessage.Define<int, int>(LogLevel.Error, new EventId(5, nameof(LogBroadcastRetry)), 
+            "Error sending broadcast frame, retrying {Retry}/{MaxRetries}");
+
+    private static readonly Action<ILogger, string, Exception> LogIOErrorOnPort =
+        LoggerMessage.Define<string>(LogLevel.Error, new EventId(6, nameof(LogIOErrorOnPort)), 
+            "IO error occurred while reading from port {PortName}");
+
+    private static readonly Action<ILogger, string, Exception> LogInvalidOperationOnPort =
+        LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, nameof(LogInvalidOperationOnPort)), 
+            "Invalid operation while reading from port {PortName}");
+
     public Action<Exception>? OnError { get; set; }
 
 #if NET6_0_OR_GREATER
@@ -194,9 +223,11 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         if (!IsPortsConnected())
         {
             OnError?.Invoke(new InvalidOperationException("No open serial ports available."));
-            _logger.LogError("No open serial ports available.");
+            LogNoOpenSerialPorts(_logger, null);
             yield return default;
         }
+        using var token = CancellationTokenExtensions
+            .CreateTimeoutTokenIfNeeded(Options.Timeout, Options.RetryCount, cancellationToken, out var effectiveToken);
 
         // 广播到所有通道
         var sendTasks = Options.Channels.Distinct()
@@ -207,25 +238,25 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         }
         catch (OperationCanceledException ex)
         {
-            _logger.LogError(ex, "Operation was canceled while sending broadcast frame");
+            LogOperationCanceled(_logger, ex);
             OnError?.Invoke(ex); // 触发 OnError
         }
         catch (IOException ex)
         {
-            _logger.LogError(ex, "IO error occurred while sending broadcast frame");
+            LogIOError(_logger, ex);
             OnError?.Invoke(ex); // 触发 OnError
         }
         catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Invalid operation while sending broadcast frame");
+            LogInvalidOperation(_logger, ex);
             OnError?.Invoke(ex); // 触发 OnError
         }
 
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         var expectedFrames = buffer.Span.IsBroadcast() ? -1 : Options.Channels.Count;
         // 等待返回帧
-        await foreach (var header in cts.Expect(expectedFrames, ReceiveFrameAsync(cts.Token), Options.Timeout)
+
+        await foreach (var header in token.Expect(expectedFrames, ReceiveFrameAsync(effectiveToken), Options.Timeout)
             .WithCancellation(cancellationToken))
         {
             yield return header;
@@ -236,8 +267,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     public async IAsyncEnumerable<SemanticValue> ReadAsync(byte[] address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read(dataId), effectiveToken)
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read(dataId), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -246,8 +276,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     public async IAsyncEnumerable<SemanticValue> ReadAsync(string address, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read((uint)Command.EnergyData.ForwardActiveTotalEnergy), effectiveToken)
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read((uint)Command.EnergyData.ForwardActiveTotalEnergy), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -256,8 +285,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     public async IAsyncEnumerable<SemanticValue> ReadAsync(string address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read(dataId), effectiveToken)
+        await foreach (var item in TrySendAsync(Command.Code.ReadData, address, DataBuilder.Read(dataId), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -266,8 +294,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     public async IAsyncEnumerable<SemanticValue> ReadAsync(uint command, byte[] address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync<SemanticValue>(Convert.ToByte(command), address, DataBuilder.Read(dataId), effectiveToken)
+        await foreach (var item in TrySendAsync<SemanticValue>(Convert.ToByte(command), address, DataBuilder.Read(dataId), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -290,8 +317,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     public async IAsyncEnumerable<SemanticValue> ReadNextAsync(byte[] address, byte frameIndex, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync(Command.Code.ReadSubsequentData, address, DataBuilder.ReadNext(frameIndex), effectiveToken)
+        await foreach (var item in TrySendAsync(Command.Code.ReadSubsequentData, address, DataBuilder.ReadNext(frameIndex), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -300,8 +326,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     public async IAsyncEnumerable<SemanticValue> ReadNextAsync(string addresses, byte frameIndex, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        await foreach (var item in TrySendAsync(Command.Code.ReadSubsequentData, addresses, DataBuilder.ReadNext(frameIndex), effectiveToken)
+        await foreach (var item in TrySendAsync(Command.Code.ReadSubsequentData, addresses, DataBuilder.ReadNext(frameIndex), ct)
             .ConfigureAwait(false))
         {
             yield return item;
@@ -310,29 +335,19 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
 
     public IAsyncEnumerable<SemanticValue> WriteAsync(byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default)
-    {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        return TrySendAsync(Command.Code.WriteData, address, DataBuilder.Write(dataId, password, operatorCode, payload), effectiveToken);
-    }
+        => TrySendAsync(Command.Code.WriteData, address, DataBuilder.Write(dataId, password, operatorCode, payload), ct);
 
     public IAsyncEnumerable<SemanticValue> WriteAsync(uint command, byte[] address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default)
-    {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        return TrySendAsync(Convert.ToByte(command), address, DataBuilder.Write(dataId, password, operatorCode, payload), effectiveToken);
-    }
+        => TrySendAsync(Convert.ToByte(command), address, DataBuilder.Write(dataId, password, operatorCode, payload), ct);
 
     public IAsyncEnumerable<SemanticValue> WriteAsync(string address, uint dataId, uint password, uint operatorCode, ReadOnlySpan<byte> payload, CancellationToken ct = default)
-    {
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
-        return TrySendAsync(Command.Code.WriteData, address, DataBuilder.Write(dataId, password, operatorCode, payload), effectiveToken);
-    }
+        => TrySendAsync(Command.Code.WriteData, address, DataBuilder.Write(dataId, password, operatorCode, payload), ct);
 
     public async IAsyncEnumerable<SemanticValue> WriteAsync(uint command, string addresses, uint dataId, uint password, uint operatorCode, byte[] payload,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
         var commandByte = Convert.ToByte(command);
         var dataBytes = DataBuilder.Write(dataId, password, operatorCode, payload);
-        using var timeoutCts = CreateTimeoutTokenIfNeeded(ct, out var effectiveToken);
 
         foreach (var address in AddressFormatExtension.FormatAddresses(addresses))
         {
@@ -342,7 +357,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
                 bytes: dataBytes
             );
 
-            await foreach (var item in TrySendAsync(commandByte, address, dataBytes, effectiveToken)
+            await foreach (var item in TrySendAsync(commandByte, address, dataBytes, ct)
                 .ConfigureAwait(false))
             {
                 yield return item;
@@ -355,7 +370,8 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         if (!IsPortsConnected())
             throw new InvalidOperationException("No open serial ports available.");
 
-        //using var timeoutCts = CreateTimeoutTokenIfNeeded(cancellationToken, out var effectiveToken);
+        using var token = CancellationTokenExtensions
+           .CreateTimeoutTokenIfNeeded(Options.Timeout, Options.RetryCount, cancellationToken, out var effectiveToken);
 
 
         // 广播帧
@@ -379,21 +395,20 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             }
             catch (Exception ex) when (retry < Options.RetryCount)
             {
-                _logger.LogError(ex, "Error sending broadcast frame, retrying {Retry}/{MaxRetries}", retry + 1, Options.RetryCount);
+                LogBroadcastRetry(_logger, retry + 1, Options.RetryCount, ex);
                 OnError?.Invoke(ex);
             }
         }
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
 
         // 等待返回帧 广播不会等待响应
-        await foreach (var header in cts.Expect(-1, ReceiveFrameAsync(cts.Token), Options.Timeout)
+        await foreach (var header in token.Expect(-1, ReceiveFrameAsync(effectiveToken), Options.Timeout)
             .WithCancellation(cancellationToken))
         {
 #if NET6_0_OR_GREATER
             yield return new(Convert.ToHexString(header.Address));
 #else
         string id = BitConverter.ToString(header.Address).Replace("-", "");
+        yield return new(id);
 #endif
         }
 
@@ -423,7 +438,9 @@ public sealed class Dlt645Client : Channel, IDlt645Client
                 {
                     await outputChannel.Writer.WriteAsync(header, cancellationToken).ConfigureAwait(false);
                 }
+
             }
+
             catch (Exception ex)
             {
                 outputChannel.Writer.TryComplete(ex);
@@ -436,21 +453,34 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
         DateTime lastResponseTime = DateTime.MinValue;
 
-        while (await outputChannel.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+
+        bool canRead;
+        try
         {
-            if (outputChannel.Reader.TryRead(out var header))
+            canRead = await outputChannel.Reader
+                .WaitToReadAsync(cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            yield break; // 所期望 Expect 正常完成
+        }
+
+
+        if (!canRead)
+            yield break;
+
+
+        while (outputChannel.Reader.TryRead(out var header))
+        {
+            if (continueCallback != null
+                && continueCommandCode.HasValue
+                && header.Code == continueCommandCode.Value)
             {
-                if (continueCallback != null
-                    && continueCommandCode.HasValue
-                    && header.Code == continueCommandCode.Value)
-                {
-                    await continueCallback(header).ConfigureAwait(false);
-                }
-
-                yield return header;
-
+                await continueCallback(header).ConfigureAwait(false);
             }
 
+            yield return header;
         }
 
 #pragma warning disable CA1031 // 不捕获常规异常类型
@@ -459,6 +489,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             outputChannel.Writer.Complete(); // 正常完成
             await Task.WhenAll(portReadingTasks).ConfigureAwait(false);
         }
+
         catch (Exception ex)
         {
             outputChannel.Writer.TryComplete(ex);
@@ -493,6 +524,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             using var timeoutCts = new CancellationTokenSource(timeSpan);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, timeoutCts.Token);
 
+#pragma warning disable CA1031 // 不捕获常规异常类型
             try
             {
                 bytesRead = await ReadAsync(port.PortName, recvBuffer, 0, recvBuffer.Length, linkedCts.Token)
@@ -512,15 +544,16 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             catch (IOException ex)
             {
                 OnError?.Invoke(ex);
-                _logger.LogError(ex, "IO error occurred while reading from port {PortName}", port.PortName);
+                LogIOErrorOnPort(_logger, port.PortName, ex);
                 yield break;
             }
             catch (Exception ex)
             {
                 OnError?.Invoke(ex);
-                _logger.LogError(ex, "Invalid operation while reading from port {PortName}", port.PortName);
+                LogInvalidOperationOnPort(_logger, port.PortName, ex);
                 yield break;
             }
+#pragma warning restore CA1031 // 不捕获常规异常类型
 
             if (bytesRead <= 0)
                 continue;

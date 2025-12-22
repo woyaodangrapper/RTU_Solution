@@ -162,26 +162,6 @@ public class Channel : IDisposable
         return true;
     }
 
-
-    /// <summary>
-    /// 确保有一个有效的取消令牌，如果传入的令牌无法取消，则创建一个基于 ChannelOptions.Timeout 的兜底超时令牌
-    /// </summary>
-    protected CancellationTokenSource? CreateTimeoutTokenIfNeeded(CancellationToken cancellationToken, out CancellationToken effectiveToken)
-    {
-        // 如果用户已经提供了可取消的令牌，直接使用
-        if (cancellationToken.CanBeCanceled)
-        {
-            effectiveToken = cancellationToken;
-            return null;
-        }
-
-        // 否则创建一个兜底超时令牌：Timeout * (RetryCount + 1) * 2，给予足够的时间
-        var timeoutDuration = TimeSpan.FromMilliseconds(Options.Timeout.TotalMilliseconds * (Options.RetryCount + 1) * 2);
-        var cts = new CancellationTokenSource(timeoutDuration);
-        effectiveToken = cts.Token;
-        return cts;
-    }
-
     public bool IsPortsConnected()
     {
         ThrowHelper.ThrowIf(_disposed, this);
@@ -245,6 +225,9 @@ public class Channel : IDisposable
 
     public int Read(string comPort, byte[] buffer)
         => Read(comPort, buffer.AsSpan());
+
+
+
 
     /// <summary>
     /// 异步写入数据到指定串口。
