@@ -66,7 +66,15 @@ internal static class MessageHeaderExtensions
     {
         if (frame.Length < 10)
             return false;
-        return frame.Slice(1, 6).SequenceEqual(stackalloc byte[] { 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA });
+        // 广播地址字节
+        ReadOnlySpan<byte> broadcast = [0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA];
+        for (int i = 0; i <= frame.Length - 6; i++)
+        {
+            if (frame.Slice(i, 6).SequenceEqual(broadcast))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>

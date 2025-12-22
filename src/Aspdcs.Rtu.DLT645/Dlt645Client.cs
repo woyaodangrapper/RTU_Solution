@@ -8,6 +8,7 @@ using Aspdcs.Rtu.Attributes;
 
 
 
+
 #if NET6_0_OR_GREATER
 
 using RJCP.IO.Ports;
@@ -29,31 +30,31 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     // LoggerMessage 委托，用于高性能日志记录
     private static readonly Action<ILogger, Exception?> LogNoOpenSerialPorts =
-        LoggerMessage.Define(LogLevel.Error, new EventId(1, nameof(LogNoOpenSerialPorts)), 
+        LoggerMessage.Define(LogLevel.Error, new EventId(1, nameof(LogNoOpenSerialPorts)),
             "No open serial ports available.");
 
     private static readonly Action<ILogger, Exception> LogOperationCanceled =
-        LoggerMessage.Define(LogLevel.Error, new EventId(2, nameof(LogOperationCanceled)), 
+        LoggerMessage.Define(LogLevel.Error, new EventId(2, nameof(LogOperationCanceled)),
             "Operation was canceled while sending broadcast frame");
 
     private static readonly Action<ILogger, Exception> LogIOError =
-        LoggerMessage.Define(LogLevel.Error, new EventId(3, nameof(LogIOError)), 
+        LoggerMessage.Define(LogLevel.Error, new EventId(3, nameof(LogIOError)),
             "IO error occurred while sending broadcast frame");
 
     private static readonly Action<ILogger, Exception> LogInvalidOperation =
-        LoggerMessage.Define(LogLevel.Error, new EventId(4, nameof(LogInvalidOperation)), 
+        LoggerMessage.Define(LogLevel.Error, new EventId(4, nameof(LogInvalidOperation)),
             "Invalid operation while sending broadcast frame");
 
     private static readonly Action<ILogger, int, int, Exception> LogBroadcastRetry =
-        LoggerMessage.Define<int, int>(LogLevel.Error, new EventId(5, nameof(LogBroadcastRetry)), 
+        LoggerMessage.Define<int, int>(LogLevel.Error, new EventId(5, nameof(LogBroadcastRetry)),
             "Error sending broadcast frame, retrying {Retry}/{MaxRetries}");
 
     private static readonly Action<ILogger, string, Exception> LogIOErrorOnPort =
-        LoggerMessage.Define<string>(LogLevel.Error, new EventId(6, nameof(LogIOErrorOnPort)), 
+        LoggerMessage.Define<string>(LogLevel.Error, new EventId(6, nameof(LogIOErrorOnPort)),
             "IO error occurred while reading from port {PortName}");
 
     private static readonly Action<ILogger, string, Exception> LogInvalidOperationOnPort =
-        LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, nameof(LogInvalidOperationOnPort)), 
+        LoggerMessage.Define<string>(LogLevel.Error, new EventId(7, nameof(LogInvalidOperationOnPort)),
             "Invalid operation while reading from port {PortName}");
 
     public Action<Exception>? OnError { get; set; }
