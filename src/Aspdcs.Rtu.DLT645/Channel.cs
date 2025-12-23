@@ -90,7 +90,7 @@ public class Channel : IDisposable
     }
 
     // 改为同步方法
-    protected virtual void Create()
+    public virtual void Run()
     {
         foreach (var com in Options.Channels.Distinct())
         {
@@ -120,6 +120,55 @@ public class Channel : IDisposable
         }
         LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
     }
+
+
+    public virtual async Task RunAsync()
+    {
+        // 初始化并打开所有串口
+        foreach (var com in Options.Channels.Distinct())
+        {
+            var port = await SerialPortExtensions.AutoNegotiateAsync(
+                portName: com.Port,
+                timeout: Options.Timeout,
+                Options.Port
+            ).ConfigureAwait(false);
+
+            Ports.Add(port);
+
+            // 立即打开串口
+            try
+            {
+                port.Open();
+                LogPortOpen(_logger, port.PortName, null);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogPortError(_logger, port.PortName, ex);
+                Dispose();
+                throw;
+            }
+            catch (ArgumentException ex)
+            {
+                LogPortError(_logger, port.PortName, ex);
+                Dispose();
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogPortError(_logger, port.PortName, ex);
+                Dispose();
+                throw;
+            }
+            catch (IOException ex)
+            {
+                LogPortError(_logger, port.PortName, ex);
+                Dispose();
+                throw;
+            }
+        }
+        LogChannelInitialized(_logger, ChannelName, Ports.Count, null);
+    }
+
 
 #if NET6_0_OR_GREATER
 
@@ -312,6 +361,7 @@ public class Channel : IDisposable
         byte[] buffer,
         CancellationToken cancellationToken = default)
         => ReadAsync(comPort, buffer.AsMemory(), cancellationToken);
+
 
     protected virtual void Dispose(bool disposing)
     {

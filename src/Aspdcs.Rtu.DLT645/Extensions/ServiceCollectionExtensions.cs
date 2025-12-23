@@ -56,7 +56,7 @@ public static class ServiceCollectionExtensions
     /// <param name="name">客户端名称</param>
     /// <param name="configureBuilder">用于配置 <see cref="CreateBuilder"/> 的委托</param>
     /// <returns>服务集合，以便链式调用</returns>
-    public static IServiceCollection AddDlt645Client(this IServiceCollection services, string name, Action<CreateBuilder> configureBuilder)
+    public static IServiceCollection AddDlt645Client(this IServiceCollection services, string name, Action<ChannelOptions.Builder> configureBuilder)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("客户端名称不能为空", nameof(name));
@@ -67,7 +67,7 @@ public static class ServiceCollectionExtensions
         {
             var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
 
-            var builder = new CreateBuilder(name);
+            var builder = new ChannelOptions.Builder(name);
 
             if (loggerFactory != null)
             {
@@ -116,7 +116,7 @@ public static class ServiceCollectionExtensions
         {
             var logger = serviceProvider.GetService<ILoggerFactory>();
 
-            return new CreateBuilder("default")
+            return new ChannelOptions.Builder("default")
                 .WithChannel(comStr)
                 .WithLogger(logger)
                 .Run();

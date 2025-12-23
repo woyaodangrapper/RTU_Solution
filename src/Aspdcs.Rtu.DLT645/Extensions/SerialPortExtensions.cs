@@ -236,6 +236,159 @@ internal static class SerialPortExtensions
     /// </summary>
     public static Task FlushAsync(this SerialPort port, CancellationToken cancellationToken = default) => Task.CompletedTask;
 #endif
+#if NET6_0_OR_GREATER
+
+    /// <summary>
+    /// 自动探测串口是否能正常与 DLT645 从机通讯（异步）
+    /// </summary>
+    public static async Task<SerialPortStream> AutoNegotiateAsync(
+        string portName,
+        TimeSpan timeout,
+        ComOptions options,
+        CancellationToken cancellation = default)
+    {
+        if (!options.Auto)
+        {
+            return new SerialPortStream(portName, options.BaudRate, options.DataBits, options.Parity, options.StopBits)
+            {
+                ReadTimeout = (int)timeout.TotalMilliseconds,
+                WriteTimeout = (int)timeout.TotalMilliseconds
+            };
+        }
+
+        var messageHeader = new MessageHeader(
+            address: [.. Enumerable.Repeat((byte)0xAA, 6)],
+            control: (byte)Command.Code.ReadAddress,
+            bytes: []
+        );
+
+        byte[] messageBytes = messageHeader.ToBytes();
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(32);
+
+        try
+        {
+            foreach (var (parity, baud, databits, stopBits) in _candidates)
+            {
+                using var port = new SerialPortStream(portName, baud, databits, parity, stopBits)
+                {
+                    ReadTimeout = (int)timeout.TotalMilliseconds,
+                    WriteTimeout = (int)timeout.TotalMilliseconds
+                };
+
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+                cts.CancelAfter(timeout);
+
+                try
+                {
+                    port.Open();
+                    await port.FlushAsync(cts.Token).ConfigureAwait(false);
+                    await port.WriteAsync(messageBytes, cts.Token).ConfigureAwait(false);
+                    int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
+
+                    if (IsValid(buffer.AsSpan(0, read)))
+                    {
+                        var result = ClonePort(port);
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        return result;
+                    }
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+                catch (OperationCanceledException) { }
+                catch (TimeoutException) { }
+                finally
+                {
+                    port.Close();
+                }
+            }
+
+            throw new InvalidOperationException($"无法与设备建立 DLT645 通讯（端口：{portName}）。");
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+
+
+#else
+
+/// <summary>
+/// 自动探测串口是否能正常与 DLT645 从机通讯（异步）
+/// </summary>
+public static async Task<SerialPort> AutoNegotiateAsync(
+    string portName,
+    TimeSpan timeout,
+    ComOptions options,
+    CancellationToken cancellation = default)
+{
+    if (!options.Auto)
+    {
+        return new SerialPort(portName, options.BaudRate, options.Parity, options.DataBits, options.StopBits)
+        {
+            ReadTimeout = (int)timeout.TotalMilliseconds,
+            WriteTimeout = (int)timeout.TotalMilliseconds
+        };
+    }
+
+    var messageHeader = new MessageHeader(
+        address: [.. Enumerable.Repeat((byte)0xAA, 6)],
+        control: (byte)Command.Code.ReadAddress,
+        bytes: Array.Empty<byte>()
+    );
+
+    byte[] messageBytes = messageHeader.ToBytes();
+    byte[] buffer = ArrayPool<byte>.Shared.Rent(32);
+
+    try
+    {
+        foreach (var (parity, baud, databits, stopBits) in _candidates)
+        {
+            using var port = new SerialPort(portName, baud, parity, databits, stopBits)
+            {
+                ReadTimeout = (int)timeout.TotalMilliseconds,
+                WriteTimeout = (int)timeout.TotalMilliseconds
+            };
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+            cts.CancelAfter(timeout);
+
+            try
+            {
+                port.Open();
+                await port.FlushAsync(cts.Token).ConfigureAwait(false);
+                await port.WriteAsync(messageBytes, cts.Token).ConfigureAwait(false);
+                int read = await port.ReadAsync(buffer, cts.Token).ConfigureAwait(false);
+
+                if (IsValid(buffer.AsSpan(0, read)))
+                {
+                    var result = ClonePort(port);
+                    ArrayPool<byte>.Shared.Return(buffer);
+                    return result;
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+            catch (OperationCanceledException) { }
+            catch (TimeoutException) { }
+            finally
+            {
+                if (port.IsOpen)
+                    port.Close();
+            }
+        }
+
+        throw new InvalidOperationException($"无法与设备建立 DLT645 通讯（端口：{portName}）。");
+    }
+    finally
+    {
+        ArrayPool<byte>.Shared.Return(buffer);
+    }
+}
+
+#endif
+
 
     /// <summary>
     /// 判断 68 起始 + CS 校验是否正确

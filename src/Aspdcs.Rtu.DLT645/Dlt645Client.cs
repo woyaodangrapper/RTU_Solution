@@ -9,6 +9,8 @@ using Aspdcs.Rtu.Attributes;
 
 
 
+
+
 #if NET6_0_OR_GREATER
 
 using RJCP.IO.Ports;
@@ -70,20 +72,31 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 #endif
 
     public Dlt645Client() : base(new("default"), NullLoggerFactory.Instance)
+        => _logger = NullLogger<Dlt645Client>.Instance;
+
+    public Dlt645Client(ChannelOptions options, ILoggerFactory? loggerFactory = null)
+        : base(options, loggerFactory ?? NullLoggerFactory.Instance)
     {
-        _logger = NullLogger<Dlt645Client>.Instance;
-        Create();
+        _logger = (loggerFactory ?? NullLoggerFactory.Instance)
+            .CreateLogger<Dlt645Client>();
     }
 
-    public Dlt645Client(ChannelOptions options, ILoggerFactory loggerFactory) : base(options, loggerFactory)
+    public override async Task RunAsync()
     {
-        _logger = loggerFactory.CreateLogger<Dlt645Client>();
-        Create();
-    }
+        await base.RunAsync()
+            .ConfigureAwait(false);
 
-    protected override void Create()
+        foreach (var item in Ports)
+        {
+            if (item != null && item.IsOpen)
+            {
+                OnSuccess?.Invoke(item);
+            }
+        }
+    }
+    public override void Run()
     {
-        base.Create();
+        base.Run();
 
         foreach (var item in Ports)
         {
@@ -664,4 +677,5 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             return false;
         }
     }
+
 }

@@ -1,7 +1,7 @@
 using Aspdcs.Rtu.Contracts;
 using Aspdcs.Rtu.Contracts.DLT645;
 
-namespace Aspdcs.Rtu.DLT645.Contracts;
+namespace Aspdcs.Rtu.DLT645;
 
 /// <summary>
 /// 定义 DLT645 协议客户端的通用契约。
@@ -182,4 +182,6 @@ public interface IDlt645Client : IContracts
     /// 销毁
     /// </summary>
     void Dispose();
+
+
 }

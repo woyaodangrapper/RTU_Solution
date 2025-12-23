@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Collections.ObjectModel;
 
+
 #if NET6_0_OR_GREATER
 
 using RJCP.IO.Ports;
@@ -64,6 +65,11 @@ public sealed class ChannelOptions
 
     public static Builder CreateBuilder(string name)
      => new(name);
+
+
+    public static Builder CreateDefaultBuilder()
+     => new("MyChannel");
+
     /// <summary>
     /// DLT645 通道配置构建器
     /// </summary>
@@ -258,7 +264,33 @@ public sealed class ChannelOptions
             Port = _port
         };
 
-        public IDlt645Client Run() => new Dlt645Client(Build(), _loggerFactory);
+        /// <summary>
+        /// 使用已配置的设置和日志工厂初始化并启动一个新的 DLT645 客户端实例。
+        /// </summary>
+        /// <remarks>
+        /// 返回的客户端实例已启动并可立即进行通信。调用方负责管理客户端的生命周期，包括在不再需要时进行释放。
+        /// </remarks>
+        /// <returns>表示正在运行的 DLT645 客户端实例的 <see cref="IDlt645Client"/> 对象。</returns>
+        public IDlt645Client Run()
+        {
+            Dlt645Client client = new(Build(), _loggerFactory);
+            client.Run();
+            return client;
+        }
+
+        /// <summary>
+        /// 异步初始化并启动一个 DLT645 客户端实例。
+        /// </summary>
+        /// <remarks>
+        /// 返回的客户端在任务完成前已完全初始化并完成启动流程。调用方负责在客户端不再使用时进行释放。
+        /// </remarks>
+        /// <returns>表示异步操作的任务。任务结果包含一个已准备好进行通信的 <see cref="IDlt645Client"/> 实例。</returns>
+        public async Task<IDlt645Client> RunAsync()
+        {
+            Dlt645Client client = new(Build(), _loggerFactory);
+            await client.RunAsync().ConfigureAwait(false);
+            return client;
+        }
     }
 }
 
