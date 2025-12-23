@@ -1,5 +1,6 @@
 using Aspdcs.Rtu.Contracts;
 using Aspdcs.Rtu.Contracts.DLT645;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Aspdcs.Rtu.DLT645;
 
@@ -69,6 +70,23 @@ public interface IDlt645Client : IContracts
     /// <param name="ct">取消令牌</param>
     /// <returns>返回语义值序列</returns>
     IAsyncEnumerable<SemanticValue> ReadAsync(string address, CancellationToken ct = default);
+
+    /// <summary>
+    /// 读取设备数据总电能
+    /// </summary>
+    /// <param name="addresses">设备地址</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync([NotNull] IEnumerable<AddressValue> addresses, CancellationToken ct = default);
+
+    /// <summary>
+    /// 读取设备数据
+    /// </summary>
+    /// <param name="addresses">设备地址</param>
+    /// <param name="dataId">数据标识</param>
+    /// <param name="ct">取消令牌</param>
+    /// <returns>返回语义值序列</returns>
+    IAsyncEnumerable<SemanticValue> ReadAsync([NotNull] IEnumerable<AddressValue> addresses, uint dataId, CancellationToken ct = default);
 
     /// <summary>
     /// 读取设备数据（字节数组地址）

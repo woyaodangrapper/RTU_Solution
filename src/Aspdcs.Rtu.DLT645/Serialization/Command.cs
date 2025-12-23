@@ -376,11 +376,6 @@ public static class Command
         /// 总有功电能
         /// </summary>
         TotalActiveEnergy = 0x9010,
-
-        /// <summary>
-        /// 日最大需量
-        /// </summary>
-        DailyMaxDemand = 0x0001
     }
 
     #endregion DLT645-1997 兼容 (1997 Compatibility)

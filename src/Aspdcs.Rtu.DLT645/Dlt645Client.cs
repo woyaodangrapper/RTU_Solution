@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 using Aspdcs.Rtu.Contracts.DLT645;
 using Aspdcs.Rtu.Attributes;
-using System.Diagnostics;
 
 #if NET6_0_OR_GREATER
 
@@ -272,6 +271,21 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
     }
 
+    public async IAsyncEnumerable<SemanticValue> ReadAsync([NotNull] IEnumerable<AddressValue> addresses, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in ReadAsync(string.Join(";", addresses.Select(a => a.Address)), ct).ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+    public async IAsyncEnumerable<SemanticValue> ReadAsync([NotNull] IEnumerable<AddressValue> addresses, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in ReadAsync(addresses, dataId, ct).ConfigureAwait(false))
+        {
+            yield return item;
+        }
+    }
+
 
     public async IAsyncEnumerable<SemanticValue> ReadAsync(byte[] address, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
     {
@@ -393,7 +407,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         // 发送广播帧到所有打开的串口
         var sendTasks = Options.Channels.Distinct().Select(com => Task.Run(() =>
          Write(com.Port, bytes, 0, length), cancellationToken));
-
+        await Task.WhenAll(sendTasks).ConfigureAwait(false);
         for (int retry = 0; retry <= Options.RetryCount; retry++)
         {
             try
@@ -591,7 +605,6 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     private bool TryAssemble(out byte[] frame)
     {
         frame = default!;
-        var sw = Stopwatch.StartNew();
         try
         {
             // 跳过前导 FE
@@ -655,8 +668,6 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             {
                 MessageHeaderExtensions.DecodeData(data);
             }
-            sw.Stop();
-            Console.WriteLine($"ReadLoopAsync total elapsed: {sw.ElapsedMilliseconds} ms");
 
             return true;
         }
@@ -677,5 +688,4 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             return false;
         }
     }
-
 }
