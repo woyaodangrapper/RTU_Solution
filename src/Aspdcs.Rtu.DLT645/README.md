@@ -3,7 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/Aspdcs.Rtu.DLT645.svg)](https://www.nuget.org/packages/Aspdcs.Rtu.DLT645)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 
-生产就绪的 DLT645-2007 电力仪表通信库，支持 .NET 6+ 
+生产就绪的 DLT645 电力仪表通信库，支持 DLT645-1997/2007 协议，兼容 .NET Standard 2.1+（建议 .NET 9+ 以获得高性能） 
 
 ## ✨ 核心特性
 
@@ -39,6 +39,14 @@ IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
     .WithAuto()                 // 可选：启用自动模式
     .Run();
 
+// 或使用默认配置创建客户端
+//var options = ChannelOptions.CreateDefaultBuilder()
+//    .WithChannel("COM5")
+//    .Build();
+
+//Dlt645Client client = new(options);
+
+
 // 2. 广播发现设备地址
 await foreach (var address in client.TryReadAddressAsync())
 {
@@ -73,20 +81,18 @@ services.AddDlt645Client(options =>
 var provider = services.BuildServiceProvider();
 var client = provider.GetRequiredService<IDlt645Client>();
 
-// 使用
-awai广播读地址
-
-```csharp
-// 自动发现网络中的所有电表
-await foreach (var address in client.TryReadAddressAsync())
+// 使用客户端读取数据
+await foreach (var frame in client.ReadAsync("111100000000"))
 {
-    Console.WriteLine($"发现设备: {address}");
+    Console.WriteLine($"电表数据: {frame}");
 }
 ```
 
 ### 批量读取
 
 ```csharp
+// 读取多个数据标识
+var address = "111100000000";
 var dataItems = new[]
 {
     0x00010000,  // 正向有功总电能
@@ -96,9 +102,9 @@ var dataItems = new[]
 
 foreach (var dataId in dataItems)
 {
-    await foreach (var value in client.ReadAsync(address, dataId))
+    await foreach (var frame in client.ReadAsync(address, dataId))
     {
-        Console.WriteLine($"数据标识 {dataId:X8}: {value}");
+        Console.WriteLine($"数据标识 {dataId:X8}: {frame}");
     }
 }
 ```
@@ -108,13 +114,47 @@ foreach (var dataId in dataItems)
 ```csharp
 // 支持多种地址格式
 var address1 = "11-11-00-00-00-00";  // 带分隔符
-var address2 = "111100000000";        // 无分隔符
+var address2 = "111100000000";        // 无分隔符(推荐)
 
 // 读取指定数据标识
 var dataId = 0x02010100;  // A 相电压
 await foreach (var frame in client.ReadAsync(address1, dataId))
 {
     Console.WriteLine($"A 相电压: {frame}");
+}
+
+// 读取多个数据标识
+var dataItems = new[] { 0x00010000, 0x02010100, 0x02020100 };
+foreach (var id in dataItems)
+{
+    await foreach (var frame in client.ReadAsync("111100000000", id))
+    {
+        Console.WriteLine($"数据标识 {id:X8}: {frame}");
+    }
+}
+```
+
+### DLT645-1997 协议支持
+
+```csharp
+using Aspdcs.Rtu.DLT645;
+using Aspdcs.Rtu.DLT645.Extensions;
+
+IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
+    .WithChannel("COM5")
+    .WithAuto()
+    .Run();
+
+// 读取 1997 版电表总(正向有功)电量数据
+await foreach (var frame in client.Read1997Async("111100000000"))
+{
+    Console.WriteLine($"1997 电量数据: {frame}");
+}
+
+// 根据控制码读取 1997 版电表日最大需量数据
+await foreach (var frame in client.Read1997Async("111100000000", 0x11, 0x0001))
+{
+    Console.WriteLine($"日最大需量: {frame}");
 }
 ```
 
@@ -163,10 +203,13 @@ await foreach (var frame in client.ReadAsync(address1, dataId))
 
 ## 平台支持
 
-| 平台 | 版本 | 串口库 |
-|------|------|--------|
-| .NET 6+ | ✅ | RJCP.IO.Ports 3.0.4 |
-| .NET Standard | ✅ 2.1 | System.IO.Ports 4.7.0 |
+| 平台 | 版本 | 说明 |
+|------|------|------|
+| .NET Standard 2.1+ | ✅ | 兼容 .NET 3.0+，基础功能完整 |
+| .NET 6/7/8 | ✅ | 推荐用于生产环境 |
+| .NET 9+ | ⭐ | **推荐**：零拷贝优化，性能最佳 |
+
+**串口库**：RJCP.IO.Ports 3.0.4 / System.IO.Ports 4.7.0
 
 ## 示例项目
 

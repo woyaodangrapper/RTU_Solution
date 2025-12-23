@@ -3,7 +3,7 @@
 [![NuGet](https://img.shields.io/nuget/v/Aspdcs.Rtu.DLT645.svg)](https://www.nuget.org/packages/Aspdcs.Rtu.DLT645)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](../../LICENSE)
 
-Production-ready DLT645-2007 power meter communication library for .NET 6+
+Production-ready DLT645 power meter communication library, supports DLT645-1997/2007 protocols, compatible with .NET Standard 2.1+ (recommended .NET 9+ for high performance)
 
 ## ✨ Core Features
 
@@ -30,25 +30,41 @@ using Microsoft.Extensions.Logging;
 
 // Create logger factory (optional)
 var loggerFactory = LoggerFactory.Create(builder =>
-    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+{
+    builder
+        .AddConsole()
+        .SetMinimumLevel(LogLevel.Trace);
+});
 
 // 1. Create client (with auto-discovery enabled)
 IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
-    .WithChannel("COM5")
+    .WithChannel("COM5")        // Specify serial port
     .WithLogger(loggerFactory)  // Optional: add logging
     .WithAuto()                 // Optional: enable auto mode
     .Run();
 
-// 2. Broadcast address discovery
+// Or create a client using the default configuration.
+//var options = ChannelOptions.CreateDefaultBuilder()
+//    .WithChannel("COM5")
+//    .Build();
+
+//Dlt645Client client = new(options);
+
+// 2. Broadcast to discover all meter devices in the network
+List<AddressValue> addresses = [];
 await foreach (var address in client.TryReadAddressAsync())
 {
     Console.WriteLine($"Found device: {address}");
+    addresses.Add(address);
 }
 
 // 3. Read energy data (defaults to forward active total energy 0x00010000)
-await foreach (var frame in client.ReadAsync("11-11-00-00-00-00"))
+foreach (var address in addresses)
 {
-    Console.WriteLine($"Received: {frame}");
+    await foreach (var frame in client.ReadAsync(address.ToString()))
+    {
+        Console.WriteLine($"Device {address} energy data: {frame}");
+    }
 }
 ```
 
@@ -72,21 +88,19 @@ services.AddDlt645Client(options =>
 
 var provider = services.BuildServiceProvider();
 var client = provider.GetRequiredService<IDlt645Client>();
-```
 
-### Broadcast Address Discovery
-
-```csharp
-// Automatically discover all meters in the network
-await foreach (var address in client.TryReadAddressAsync())
+// Use the client to read data
+await foreach (var frame in client.ReadAsync("111100000000"))
 {
-    Console.WriteLine($"Found device: {address}");
+    Console.WriteLine($"Meter data: {frame}");
 }
 ```
 
 ### Batch Reading
 
 ```csharp
+// Read multiple data identifiers
+var address = "111100000000";
 var dataItems = new[]
 {
     0x00010000,  // Forward active total energy
@@ -96,9 +110,9 @@ var dataItems = new[]
 
 foreach (var dataId in dataItems)
 {
-    await foreach (var value in client.ReadAsync(address, dataId))
+    await foreach (var frame in client.ReadAsync(address, dataId))
     {
-        Console.WriteLine($"Data ID {dataId:X8}: {value}");
+        Console.WriteLine($"Data ID {dataId:X8}: {frame}");
     }
 }
 ```
@@ -108,7 +122,7 @@ foreach (var dataId in dataItems)
 ```csharp
 // Supports multiple address formats
 var address1 = "11-11-00-00-00-00";  // With separators
-var address2 = "111100000000";        // Without separators
+var address2 = "111100000000";        // Without separators (recommended)
 
 // Read specific data identifier
 var dataId = 0x02010100;  // Phase A voltage
@@ -116,7 +130,42 @@ await foreach (var frame in client.ReadAsync(address1, dataId))
 {
     Console.WriteLine($"Phase A voltage: {frame}");
 }
+
+// Read multiple data identifiers
+var dataItems = new[] { 0x00010000, 0x02010100, 0x02020100 };
+foreach (var id in dataItems)
+{
+    await foreach (var frame in client.ReadAsync("111100000000", id))
+    {
+        Console.WriteLine($"Data ID {id:X8}: {frame}");
+    }
+}
 ```
+
+### DLT645-1997 Protocol Support
+
+```csharp
+using Aspdcs.Rtu.DLT645;
+using Aspdcs.Rtu.DLT645.Extensions;
+
+IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
+    .WithChannel("COM5")
+    .WithAuto()
+    .Run();
+
+// Read 1997 meter total (forward active) energy data
+await foreach (var frame in client.Read1997Async("111100000000"))
+{
+    Console.WriteLine($"1997 energy data: {frame}");
+}
+
+// Read 1997 meter daily maximum demand data by control code
+await foreach (var frame in client.Read1997Async("111100000000", 0x11, 0x0001))
+{
+    Console.WriteLine($"Daily maximum demand: {frame}");
+}
+```
+
 ## Protocol Support
 
 ### DLT645-1997
@@ -164,10 +213,13 @@ See [Protocol Completion Document](../../docs/LICENSE/DLT645_协议栈完成度.
 
 ## Platform Support
 
-| Platform | Version | Serial Library |
-|----------|---------|----------------|
-| .NET 6+ | ✅ | RJCP.IO.Ports 3.0.4 |
-| .NET Standard | ✅ 2.1 | System.IO.Ports 4.7.0 |
+| Platform | Version | Description |
+|----------|---------|-------------|
+| .NET Standard 2.1+ | ✅ | Compatible with .NET 3.0+, full basic features |
+| .NET 6/7/8 | ✅ | Recommended for production |
+| .NET 9+ | ⭐ | **Recommended**: Zero-copy optimization, best performance |
+
+**Serial Libraries**: RJCP.IO.Ports 3.0.4 / System.IO.Ports 4.7.0
 
 ## Sample Project
 
