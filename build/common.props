@@ -57,6 +57,9 @@
 		<!-- 许可证表达式 -->
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 
+		<!-- 许可证接受 -->
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+
 		<!-- 设置警告 -->
 		<NoWarn>$(NoWarn);1591;0436</NoWarn>
 
