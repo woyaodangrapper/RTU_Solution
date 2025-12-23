@@ -4,6 +4,9 @@ using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 using Aspdcs.Rtu.Contracts.DLT645;
 using Aspdcs.Rtu.Attributes;
+using System.Diagnostics;
+
+
 
 
 
@@ -265,7 +268,6 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             LogInvalidOperation(_logger, ex);
             OnError?.Invoke(ex); // 触发 OnError
         }
-
 
         var expectedFrames = buffer.Span.IsBroadcast() ? -1 : Options.Channels.Count;
         // 等待返回帧
@@ -534,6 +536,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
                 .ConfigureAwait(true); // 防止 tight loop
             int bytesRead;
 
+
             // 为每次读取操作创建带超时的链接令牌，防止无限等待
             using var timeoutCts = new CancellationTokenSource(timeSpan);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, timeoutCts.Token);
@@ -541,6 +544,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 #pragma warning disable CA1031 // 不捕获常规异常类型
             try
             {
+
                 bytesRead = await ReadAsync(port.PortName, recvBuffer, 0, recvBuffer.Length, linkedCts.Token)
                     .ConfigureAwait(false); // 1024
             }
@@ -574,12 +578,14 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
             // 写入环形缓冲区
             Buffer.Write(recvBuffer.AsSpan(0, bytesRead));
-
+            Console.WriteLine(Buffer.Count);
             // 循环提取所有可用的完整帧（粘包处理）
             while (TryAssemble(out var frame))
             {
                 OnMessage?.Invoke(port, frame);
                 yield return new(frame);
+
+
             }
         }
         yield break;
@@ -593,7 +599,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     private bool TryAssemble(out byte[] frame)
     {
         frame = default!;
-
+        var sw = Stopwatch.StartNew();
         try
         {
             // 跳过前导 FE
@@ -657,6 +663,8 @@ public sealed class Dlt645Client : Channel, IDlt645Client
             {
                 MessageHeaderExtensions.DecodeData(data);
             }
+            sw.Stop();
+            Console.WriteLine($"ReadLoopAsync total elapsed: {sw.ElapsedMilliseconds} ms");
 
             return true;
         }

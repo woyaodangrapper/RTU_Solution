@@ -3,6 +3,8 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
+
+
 #if NET6_0_OR_GREATER
 
 using RJCP.IO.Ports;
@@ -100,6 +102,12 @@ public class Channel : IDisposable
                 timeout: Options.Timeout,
                 Options.Port
             );
+
+            Options.Port.Parity = port.Parity;
+            Options.Port.DataBits = port.DataBits;
+            Options.Port.StopBits = port.StopBits;
+            Options.Port.BaudRate = port.BaudRate;
+
 
             Ports.Add(port);
 

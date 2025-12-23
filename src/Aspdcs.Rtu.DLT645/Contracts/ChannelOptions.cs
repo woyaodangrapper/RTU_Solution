@@ -132,7 +132,7 @@ public sealed class ChannelOptions
         /// <summary>
         /// 设置是否启用自动协商参数
         /// </summary>
-        public Builder WithAuto(bool auto)
+        public Builder WithAuto(bool auto = true)
         {
             _port.Auto = auto;
             return this;
@@ -299,7 +299,7 @@ public class ComOptions
     /// <summary>
     /// 是否启用自动协商参数
     /// </summary>
-    public bool Auto { get; set; } = true;
+    public bool Auto { get; set; }
 
     /// <summary>
     /// 波特率，AutoNegotiate = true 时可忽略

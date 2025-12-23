@@ -22,17 +22,17 @@ internal static class SerialPortExtensions
     /// 在 2400 或 9600 波特率下，以及在相同波特率下具有偶校验的 7 个数据位。</remarks>
     private static readonly (Parity parity, int baud, int databits, StopBits stopBits)[] _candidates =
     [
-        // 8E1 @ 2400
-        (Parity.Even, 2400, 8, StopBits.One),
-
         // 8E1 @ 9600
         (Parity.Even, 9600, 8, StopBits.One),
 
-        // 7E1 @ 2400
-        (Parity.Even, 2400, 7, StopBits.One),
-
+        // 8E1 @ 2400
+        (Parity.Even, 2400, 8, StopBits.One),
+        
         // 7E1 @ 9600
         (Parity.Even, 9600, 7, StopBits.One),
+
+        // 7E1 @ 2400
+        (Parity.Even, 2400, 7, StopBits.One),
     ];
 
 #if NET6_0_OR_GREATER
