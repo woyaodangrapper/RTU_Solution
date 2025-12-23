@@ -20,7 +20,7 @@ public sealed class Dlt645ClientFactory(ILoggerFactory? loggerFactory = null) : 
     public IDlt645Client CreateDlt645Client([NotNull] ChannelOptions options)
         => _instance.GetOrAdd(options.ChannelName, key => new Dlt645Client(options, _loggerFactory));
 
-    public CreateBuilder CreateBuilder([NotNull] string name) => new(name);
+    public ChannelOptions.Builder CreateBuilder([NotNull] string name) => new(name);
 
     Dlt645Client ILibraryFactory<Dlt645Client>.Create(params object[] args)
     {

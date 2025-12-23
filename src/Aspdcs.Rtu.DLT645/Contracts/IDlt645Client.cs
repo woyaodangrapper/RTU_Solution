@@ -177,4 +177,9 @@ public interface IDlt645Client : IContracts
     /// <returns>返回语义值序列</returns>
     IAsyncEnumerable<SemanticValue> WriteAsync(uint command, string addresses, uint dataId, uint password, uint operatorCode, byte[] payload, CancellationToken ct = default);
 
+
+    /// <summary>
+    /// 销毁
+    /// </summary>
+    void Dispose();
 }

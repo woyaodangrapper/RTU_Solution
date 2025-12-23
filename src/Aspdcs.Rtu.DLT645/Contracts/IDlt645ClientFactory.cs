@@ -17,5 +17,5 @@ public interface IDlt645ClientFactory : ILibraryFactory<Dlt645Client>
     /// <summary>
     /// 使用指定名称创建一个 Dlt645 客户端构建器。
     /// </summary>
-    CreateBuilder CreateBuilder(string name);
+    ChannelOptions.Builder CreateBuilder(string name);
 }
