@@ -6,14 +6,6 @@ using Aspdcs.Rtu.Contracts.DLT645;
 using Aspdcs.Rtu.Attributes;
 using System.Diagnostics;
 
-
-
-
-
-
-
-
-
 #if NET6_0_OR_GREATER
 
 using RJCP.IO.Ports;
@@ -578,7 +570,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 
             // 写入环形缓冲区
             Buffer.Write(recvBuffer.AsSpan(0, bytesRead));
-            Console.WriteLine(Buffer.Count);
+
             // 循环提取所有可用的完整帧（粘包处理）
             while (TryAssemble(out var frame))
             {

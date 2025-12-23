@@ -25,21 +25,28 @@ dotnet add package Aspdcs.Rtu.DLT645
 ### Basic Usage
 
 ```csharp
-using Aspdcs.Rtu.DLT645.Contracts;
+using Aspdcs.Rtu.DLT645;
+using Microsoft.Extensions.Logging;
 
-//var loggerFactory = LoggerFactory.Create(builder =>
-//    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+// Create logger factory (optional)
+var loggerFactory = LoggerFactory.Create(builder =>
+    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
-
-// 1.  Create client (with auto-discovery enabled)
-var channel = new CreateBuilder("MyChannel")
+// 1. Create client (with auto-discovery enabled)
+IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
     .WithChannel("COM5")
-    //.WithLogger(loggerFactory)
+    .WithLogger(loggerFactory)  // Optional: add logging
+    .WithAuto()                 // Optional: enable auto mode
     .Run();
 
-// 2. Read energy data (ReadAsync defaults to forward active total energy 0x00010000)
-Console.WriteLine("Starting read operation (using internal timeout protection)...");
-await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
+// 2. Broadcast address discovery
+await foreach (var address in client.TryReadAddressAsync())
+{
+    Console.WriteLine($"Found device: {address}");
+}
+
+// 3. Read energy data (defaults to forward active total energy 0x00010000)
+await foreach (var frame in client.ReadAsync("11-11-00-00-00-00"))
 {
     Console.WriteLine($"Received: {frame}");
 }
@@ -71,9 +78,9 @@ var client = provider.GetRequiredService<IDlt645Client>();
 
 ```csharp
 // Automatically discover all meters in the network
-await foreach (var frame in await client.TryReadAddressAsync())
+await foreach (var address in client.TryReadAddressAsync())
 {
-    Console.WriteLine($"Found device: {BitConverter.ToString(frame.Address)}");
+    Console.WriteLine($"Found device: {address}");
 }
 ```
 
@@ -100,9 +107,14 @@ foreach (var dataId in dataItems)
 
 ```csharp
 // Supports multiple address formats
-await foreach (var value in client.ReadAsync("111100000000", dataId))
+var address1 = "11-11-00-00-00-00";  // With separators
+var address2 = "111100000000";        // Without separators
+
+// Read specific data identifier
+var dataId = 0x02010100;  // Phase A voltage
+await foreach (var frame in client.ReadAsync(address1, dataId))
 {
-    Console.WriteLine(value);
+    Console.WriteLine($"Phase A voltage: {frame}");
 }
 ```
 ## Protocol Support

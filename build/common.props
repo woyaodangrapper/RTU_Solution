@@ -48,6 +48,15 @@
 		<!--启用所有的代码分析规则-->
 		<AnalysisMode>All</AnalysisMode>
 
+		<!-- 包描述 -->
+		<Description>RTU Solution - 工业通讯协议库</Description>
+
+		<!-- 包标签 -->
+		<PackageTags>RTU;DLT645;Modbus;Industrial;IoT;Communication;Protocol</PackageTags>
+
+		<!-- 许可证表达式 -->
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+
 		<!-- 设置警告 -->
 		<NoWarn>$(NoWarn);1591;0436</NoWarn>
 

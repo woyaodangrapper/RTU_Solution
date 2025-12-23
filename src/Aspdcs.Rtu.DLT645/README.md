@@ -25,23 +25,30 @@ dotnet add package Aspdcs.Rtu.DLT645
 ### 基础用法
 
 ```csharp
-using Aspdcs.Rtu.DLT645.Contracts;
+using Aspdcs.Rtu.DLT645;
+using Microsoft.Extensions.Logging;
 
-//var loggerFactory = LoggerFactory.Create(builder =>
-//    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
+// 创建日志工厂（可选）
+var loggerFactory = LoggerFactory.Create(builder =>
+    builder.AddConsole().SetMinimumLevel(LogLevel.Information));
 
-
-// 1.  创建客户端（启用自动发现设备）
-var channel = new CreateBuilder("MyChannel")
+// 1. 创建客户端（启用自动发现设备）
+IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
     .WithChannel("COM5")
-    //.WithLogger(loggerFactory)
+    .WithLogger(loggerFactory)  // 可选：添加日志
+    .WithAuto()                 // 可选：启用自动模式
     .Run();
 
-// 2. 读取电能数据（ReadAsync 默认读取正向有功总电能 0x00010000）
-Console.WriteLine("Starting read operation (using internal timeout protection)...");
-await foreach (var frame in channel.ReadAsync("11-11-00-00-00-00"))
+// 2. 广播发现设备地址
+await foreach (var address in client.TryReadAddressAsync())
 {
-    Console.WriteLine($"Received: {frame}");
+    Console.WriteLine($"发现设备地址: {address}");
+}
+
+// 3. 读取电能数据（默认读取正向有功总电能 0x00010000）
+await foreach (var frame in client.ReadAsync("11-11-00-00-00-00"))
+{
+    Console.WriteLine($"接收数据: {frame}");
 }
 ```
 
@@ -71,9 +78,9 @@ awai广播读地址
 
 ```csharp
 // 自动发现网络中的所有电表
-await foreach (var frame in await client.TryReadAddressAsync())
+await foreach (var address in client.TryReadAddressAsync())
 {
-    Console.WriteLine($"发现设备: {BitConverter.ToString(frame.Address)}");
+    Console.WriteLine($"发现设备: {address}");
 }
 ```
 
@@ -100,17 +107,14 @@ foreach (var dataId in dataItems)
 
 ```csharp
 // 支持多种地址格式
-await foreach (var value in client.ReadAsync("111100000000", dataId))
-{
-    Console.WriteLine(value);
+var address1 = "11-11-00-00-00-00";  // 带分隔符
+var address2 = "111100000000";        // 无分隔符
 
-foreach (var dataId in dataIds)
+// 读取指定数据标识
+var dataId = 0x02010100;  // A 相电压
+await foreach (var frame in client.ReadAsync(address1, dataId))
 {
-    var result = await channel.TryReadAsync(address, dataId);
-    if (result.Success)
-    {
-        Console.WriteLine($"数据项 {dataId:X8}: {BitConverter.ToString(result.Data)}");
-    }
+    Console.WriteLine($"A 相电压: {frame}");
 }
 ```
 

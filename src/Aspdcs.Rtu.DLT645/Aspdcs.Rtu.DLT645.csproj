@@ -1,5 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\..\build\common.props" />
+
+	<PropertyGroup>
+		<Description>DLT645 电力行业通信协议实现库，支持 DLT645-1997 和 DLT645-2007 协议</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>DLT645;电力;电表;通信协议;Smart-Meter</PackageTags>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="/" />
+	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Infrastructures\Aspdcs.Rtu\Aspdcs.Rtu.csproj" />
 	</ItemGroup>
