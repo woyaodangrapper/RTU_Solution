@@ -29,7 +29,7 @@ public class Channel : IDisposable
 
     private bool _disposed;
 
-    public ChannelOptions Options { get; }
+    public ChannelOptions Options { get; set; }
 
     /// <summary>
     /// 通道名称（唯一标识）

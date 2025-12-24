@@ -15,6 +15,13 @@ public interface IDlt645ClientFactory : ILibraryFactory<Dlt645Client>
     IDlt645Client CreateDlt645Client(ChannelOptions options);
 
     /// <summary>
+    /// Creates a new instance of a IDlt645Client for communicating with devices using the DL/T 645 protocol.
+    /// </summary>
+    /// <returns>A IDlt645Client instance that can be used to interact with DL/T 645 protocol devices.</returns>
+    IDlt645Client CreateDlt645Client();
+
+
+    /// <summary>
     /// 使用指定名称创建一个 Dlt645 客户端构建器。
     /// </summary>
     ChannelOptions.Builder CreateBuilder(string name);

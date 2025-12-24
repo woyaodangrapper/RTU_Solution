@@ -42,13 +42,20 @@ IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
     .WithLogger(loggerFactory)  // Optional: add logging
     .WithAuto()                 // Optional: enable auto mode
     .Run();
-
-// Or create a client using the default configuration.
+    
+// Or create a client using the default configuration
 //var options = ChannelOptions.CreateDefaultBuilder()
 //    .WithChannel("COM5")
 //    .Build();
 
-//Dlt645Client client = new(options);
+//var client = new Dlt645Client(options)
+//    .ConnectAsync();
+
+// Create a client using the factory
+//var factory = new Dlt645ClientFactory(loggerFactory);
+//var client = factory.CreateDlt645Client();
+//await client.ConnectAsync(options);
+
 
 // 2. Broadcast to discover all meter devices in the network
 List<AddressValue> addresses = [];

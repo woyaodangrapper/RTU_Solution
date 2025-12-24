@@ -44,8 +44,13 @@ IDlt645Client client = ChannelOptions.CreateBuilder("MyChannel")
 //    .WithChannel("COM5")
 //    .Build();
 
-//Dlt645Client client = new(options);
+//var client = new Dlt645Client(options)
+//    .ConnectAsync();
 
+// 使用工厂创建客户端
+//var factory = new Dlt645ClientFactory(loggerFactory);
+//var client = factory.CreateDlt645Client();
+//await client.ConnectAsync(options);
 
 // 2. 广播发现设备地址
 await foreach (var address in client.TryReadAddressAsync())

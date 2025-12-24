@@ -74,7 +74,22 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         _logger = (loggerFactory ?? NullLoggerFactory.Instance)
             .CreateLogger<Dlt645Client>();
     }
+    public async Task RunAsync(ChannelOptions options)
+    {
+        Options = options;
 
+        await base.RunAsync()
+            .ConfigureAwait(false);
+
+        foreach (var item in Ports)
+        {
+            if (item != null && item.IsOpen)
+            {
+                OnSuccess?.Invoke(item);
+            }
+        }
+
+    }
     public override async Task RunAsync()
     {
         await base.RunAsync()
@@ -429,8 +444,8 @@ public sealed class Dlt645Client : Channel, IDlt645Client
 #if NET6_0_OR_GREATER
             yield return new(Convert.ToHexString(header.Address));
 #else
-        string id = BitConverter.ToString(header.Address).Replace("-", "");
-        yield return new(id);
+            string id = BitConverter.ToString(header.Address).Replace("-", "");
+            yield return new(id);
 #endif
         }
 

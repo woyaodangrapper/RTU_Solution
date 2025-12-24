@@ -1,7 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Aspdcs.Rtu.DLT645;
-//using Aspdcs.Rtu.DLT645.Extensions;
 using Microsoft.Extensions.Logging;
 
 // 运行示例代码
@@ -18,13 +17,18 @@ var console = LoggerFactory.Create(builder =>
 //    .WithAuto()
 //    .Run();
 
-//// 使用默认配置创建客户端
-////var options = ChannelOptions.CreateDefaultBuilder()
-////    .WithChannel("COM5")
-////    .Build();
+// 使用默认配置创建客户端
+//var options = ChannelOptions.CreateDefaultBuilder()
+//    .WithChannel("COM5")
+//    .Build();
 
-////Dlt645Client client = new(options);
+//var client = new Dlt645Client(options)
+//    .ConnectAsync();
 
+// 使用工厂创建客户端
+//var factory = new Dlt645ClientFactory();
+//var client = factory.CreateDlt645Client();
+//await client.ConnectAsync(options);
 
 //List<AddressValue> addresses = [];
 //// 广播获取所有电表设备地址

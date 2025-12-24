@@ -131,7 +131,7 @@ public static class Dlt645Client1997Extensions
     /// 读取1997设备数据总电能
     /// </summary>
     /// <param name="channel">Dlt645Client</param>
-    /// <param name="address">设备地址</param>
+    /// <param name="addresses">设备地址</param>
     /// <param name="command">控制码</param>
     /// <param name="dataId">业务码</param>
     /// <param name="ct">取消令牌</param>

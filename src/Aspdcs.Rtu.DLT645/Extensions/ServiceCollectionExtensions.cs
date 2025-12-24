@@ -54,7 +54,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">服务集合</param>
     /// <param name="name">客户端名称</param>
-    /// <param name="configureBuilder">用于配置 <see cref="CreateBuilder"/> 的委托</param>
+    /// <param name="configureBuilder">用于配置 <see cref="ChannelOptions.Builder"/> 的委托</param>
     /// <returns>服务集合，以便链式调用</returns>
     public static IServiceCollection AddDlt645Client(this IServiceCollection services, string name, Action<ChannelOptions.Builder> configureBuilder)
     {
