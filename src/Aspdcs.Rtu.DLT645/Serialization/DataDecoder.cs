@@ -73,11 +73,9 @@ public class DataDecoder : IDataDecoder
         // data => [00 00 01 00 | 00 00 00 00 | 01] 最后一位是多出来的，非协议标准字符。
 
         ReadOnlySpan<byte> idSegment = data[..4]; // 标识符域
-        ReadOnlySpan<byte> valueSegment = data.Slice(4, data.Length - format.Length - 1); // 数值域
-        ReadOnlySpan<byte> customSegment = data.Slice(data.Length - 1, 1); // 自定义域
+        ReadOnlySpan<byte> valueSegment = data.Slice(4, format.Length); // 数值域
+        ReadOnlySpan<byte> customSegment = data[(4 + format.Length)..]; // 自定义域
 
-
-        int decimalPlaces = DecimalPlaces(format.Format);
 
         long numericValue = 0;// 高低位翻转遍历
         for (int i = valueSegment.Length - 1; i >= 0; i--)
@@ -92,12 +90,8 @@ public class DataDecoder : IDataDecoder
             numericValue = numericValue * 100 + high * 10 + low;
         }
 
-        decimal actualValue = decimalPlaces > 0
-            ? decimal.Round(numericValue, decimalPlaces)
-            : numericValue;
-
-
-
+        decimal physicalValue =
+            numericValue * (decimal)Math.Pow(10, format.Exponent);
 
         Span<byte> reversed = stackalloc byte[idSegment.Length];
         for (int i = 0; i < idSegment.Length; i++)
@@ -111,16 +105,7 @@ public class DataDecoder : IDataDecoder
         string custom = BitConverter.ToString(customSegment.ToArray()).Replace("-", "");
 #endif
 
-        return new(id, actualValue, format.Unit, custom);
+        return new(id, physicalValue, format.Format, format.Unit, custom);
     }
 
-    // 从格式字符串解析小数位
-    private static int DecimalPlaces(string format)
-    {
-        int dotIndex = format.IndexOf('.', StringComparison.Ordinal);
-        if (dotIndex < 0)
-            return 0;
-
-        return format.Length - dotIndex - 1;
-    }
 }

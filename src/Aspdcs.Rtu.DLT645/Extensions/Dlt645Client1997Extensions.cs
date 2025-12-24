@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using static Aspdcs.Rtu.DLT645.Serialization.Command;
+using ThrowHelper = Aspdcs.Rtu.Extensions.ThrowHelper;
 
 namespace Aspdcs.Rtu.DLT645.Extensions;
 
@@ -98,7 +99,10 @@ public static class Dlt645Client1997Extensions
                     sum = sum * 100 + high * 10 + low;
                 }
 
-                yield return new NumericValue("", sum, "kWh");
+                DataFormats.TryGet((uint)Legacy1997.TotalActiveEnergy, out var def);
+                ThrowHelper.ThrowIfNull(def);
+
+                yield return new NumericValue("", sum, def!.Unit, def!.Format);
             }
         }
 

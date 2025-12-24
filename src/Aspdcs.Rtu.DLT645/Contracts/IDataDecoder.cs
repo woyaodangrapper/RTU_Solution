@@ -16,7 +16,7 @@ public interface IDataDecoder
     /// 将原始字节数据解码为数值或结构化数据
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    /// <param name="data"></param>
+    /// <param name="message"></param>
     /// <param name="format"></param>
     /// <returns></returns>
     T Decode<T>(ReadOnlySpan<byte> message, DataFormat format) where T : SemanticValue;
