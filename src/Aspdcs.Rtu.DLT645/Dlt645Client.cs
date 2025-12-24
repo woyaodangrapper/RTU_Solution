@@ -295,10 +295,16 @@ public sealed class Dlt645Client : Channel, IDlt645Client
     }
     public async IAsyncEnumerable<SemanticValue> ReadAsync([NotNull] IEnumerable<AddressValue> addresses, uint dataId, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        await foreach (var item in ReadAsync(addresses, dataId, ct).ConfigureAwait(false))
+        foreach (var addr in addresses)
         {
-            yield return item;
+            if (addr == null)
+                continue;
+            await foreach (var item in ReadAsync(addr.Address, dataId, ct).ConfigureAwait(false))
+            {
+                yield return item;
+            }
         }
+
     }
 
 
@@ -422,7 +428,7 @@ public sealed class Dlt645Client : Channel, IDlt645Client
         // 发送广播帧到所有打开的串口
         var sendTasks = Options.Channels.Distinct().Select(com => Task.Run(() =>
          Write(com.Port, bytes, 0, length), cancellationToken));
-        await Task.WhenAll(sendTasks).ConfigureAwait(false);
+
         for (int retry = 0; retry <= Options.RetryCount; retry++)
         {
             try

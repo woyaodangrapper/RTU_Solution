@@ -26,7 +26,7 @@ var console = LoggerFactory.Create(builder =>
 //    .ConnectAsync();
 
 // 使用工厂创建客户端
-//var factory = new Dlt645ClientFactory();
+//var factory = new Dlt645ClientFactory(console);
 //var client = factory.CreateDlt645Client();
 //await client.ConnectAsync(options);
 

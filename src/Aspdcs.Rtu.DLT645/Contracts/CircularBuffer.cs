@@ -80,14 +80,16 @@ public sealed class CircularBuffer
     /// </summary>
     public bool TryWrite(byte value)
     {
-        if (Count >= buffer.Length)  // 满时拒写
+        // 使用局部变量快照，避免 TOCTOU
+        int currentTail = Volatile.Read(ref tailIndex);
+        int currentHead = Volatile.Read(ref headIndex);
+
+        if (currentTail - currentHead >= buffer.Length) // 满时拒写
             return false;
 
-        int idx = tailIndex & mask;
+        int idx = currentTail & mask;
         buffer[idx] = value;
-
-        // 确保 data 写入对消费者可见
-        Volatile.Write(ref tailIndex, tailIndex + 1);
+        Volatile.Write(ref tailIndex, currentTail + 1);
         return true;
     }
 
